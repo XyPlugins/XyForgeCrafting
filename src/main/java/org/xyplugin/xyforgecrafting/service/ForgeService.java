@@ -16,7 +16,9 @@ import org.xyplugin.xycore.api.XyCore;
 import org.xyplugin.xycore.api.economy.EconomyResult;
 import org.xyplugin.xycore.api.economy.EconomyService;
 import org.xyplugin.xycore.api.item.ItemLibraryService;
+import org.xyplugin.xycore.api.item.ItemTagService;
 import org.xyplugin.xyforgecrafting.XyForgeCraftingPlugin;
+import org.xyplugin.xyforgecrafting.config.ForgeRecordSettings;
 import org.xyplugin.xyforgecrafting.integration.SoulSpaceBridge;
 import org.xyplugin.xyforgecrafting.recipe.RecipeDefinition;
 import org.xyplugin.xyforgecrafting.util.Text;
@@ -27,8 +29,13 @@ import org.xyplugin.xyitems.api.XyItemsApi;
 
 /** Main-thread transactional forging pipeline. */
 public final class ForgeService {
+    private static final String CRAFTER_UUID_TAG = "xyforge-crafted-by-uuid";
+    private static final String CRAFTER_NAME_TAG = "xyforge-crafted-by-name";
+    private static final String CRAFTED_AT_TAG = "xyforge-crafted-at";
+    private static final String CRAFTED_RECIPE_TAG = "xyforge-crafted-recipe";
     private final XyForgeCraftingPlugin plugin;
     private final ItemLibraryService itemLibrary;
+    private final ItemTagService itemTags;
     private final EconomyService economy;
     private final XyItemsApi xyItems;
     private final SoulSpaceBridge soulSpace;
@@ -38,6 +45,7 @@ public final class ForgeService {
     public ForgeService(XyForgeCraftingPlugin plugin, SoulSpaceBridge soulSpace, PendingDeliveryStore pending) {
         this.plugin = plugin;
         this.itemLibrary = XyCore.get().getItems();
+        this.itemTags = XyCore.get().getItemTags();
         this.economy = XyCore.get().getEconomy();
         this.xyItems = XyItems.get();
         this.soulSpace = soulSpace;
@@ -147,7 +155,15 @@ public final class ForgeService {
             rollback(player, recipe, charged, soulReceipt, inventoryReceipt);
             return Execution.error("transaction-failed");
         }
-        List<ItemStack> output = split(rolledItem.get(), recipe.getResult().getAmount());
+        ItemStack recorded;
+        try {
+            recorded = addForgeRecord(rolledItem.get(), player, recipe, System.currentTimeMillis());
+        } catch (RuntimeException failure) {
+            plugin.getLogger().severe("写入锻造记录失败，玩家 " + player.getName() + ": " + failure.getMessage());
+            rollback(player, recipe, charged, soulReceipt, inventoryReceipt);
+            return Execution.error("transaction-failed");
+        }
+        List<ItemStack> output = split(recorded, recipe.getResult().getAmount());
         if (output.isEmpty() || !xyItems.deliverItems(player, output)) {
             rollback(player, recipe, charged, soulReceipt, inventoryReceipt);
             return Execution.error("transaction-failed");
@@ -156,6 +172,32 @@ public final class ForgeService {
         String resultName = displayName(output.get(0));
         runCommands(player, recipe, resultName);
         return Execution.success(resultName);
+    }
+
+    private ItemStack addForgeRecord(ItemStack source, Player player, RecipeDefinition recipe, long epochMillis) {
+        ItemStack recorded = source.clone();
+        ForgeRecordSettings settings = plugin.getSettings().getForgeRecord();
+        if (!settings.isEnabled()) return recorded;
+
+        String forgeTime = settings.format(epochMillis);
+        Map<String, String> placeholders = new LinkedHashMap<String, String>();
+        placeholders.put("%player_name%", player.getName());
+        placeholders.put("%forge_time%", forgeTime);
+        placeholders.put("%recipe_id%", recipe.getId());
+
+        ItemMeta meta = recorded.getItemMeta();
+        if (meta != null) {
+            List<String> existing = meta.hasLore() ? meta.getLore() : Collections.<String>emptyList();
+            meta.setLore(ForgeRecordFormatter.append(existing, settings.shouldReplaceLastSeparator(),
+                    settings.getLore(), placeholders));
+            recorded.setItemMeta(meta);
+        }
+
+        recorded = itemTags.setString(recorded, CRAFTER_UUID_TAG, player.getUniqueId().toString());
+        recorded = itemTags.setString(recorded, CRAFTER_NAME_TAG, player.getName());
+        recorded = itemTags.setString(recorded, CRAFTED_AT_TAG, String.valueOf(epochMillis));
+        recorded = itemTags.setString(recorded, CRAFTED_RECIPE_TAG, recipe.getId());
+        return recorded;
     }
 
     private MaterialAllocation allocate(Player player, RecipeDefinition recipe) {

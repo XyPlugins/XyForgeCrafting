@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.3
+# XyForgeCrafting 1.0.4
 
 XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持Java 8与Paper/Spigot 1.12.2**。
 
@@ -11,14 +11,14 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 - Paper 1.12.2 build 1620
 - Java 8
 - XyCore 0.3.10
-- XyItems 1.0.2
+- XyItems 1.0.3
 - XySoulSpace 1.1.1，可选
 - Vault和一个经济插件；配方金币为0时可以不使用经济
 - MythicMobs 4.11，可选；仅在配方引用 `mythicmobs:` 材料时需要
 
 安装顺序：
 
-1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.2.jar` 和 `XyForgeCrafting-1.0.3.jar` 放入 `plugins/`。
+1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.3.jar` 和 `XyForgeCrafting-1.0.4.jar` 放入 `plugins/`。
 2. 需要读取灵魂仓库时同时安装 `XySoulSpace-1.1.1.jar`。
 3. 完整重启服务器，不使用Bukkit `/reload`。
 4. 插件生成 `plugins/XyForgeCrafting/config.yml`、`ForgeRecipe/Example.yml` 和图纸签名密钥。
@@ -28,7 +28,7 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 
 1. 玩家输入 `/xyfc open` 打开锻造台。
 2. 唯一的图纸槽只接受XyForgeCrafting生成并签名的图纸。
-3. 放入有效图纸后，GUI显示材料拥有量、金币、失败概率、六品质最终概率和成品预览。
+3. 放入有效图纸后，GUI显示材料拥有量、金币、全部非零最终概率和成品预览。
 4. 材料默认统计 `灵魂仓库 + 主背包36格`，默认优先扣灵魂仓库，再扣背包。
 5. 点击开始后播放原版GUI火焰动画，结束时重新验证并执行事务。
 6. 成功时XyItems一次决定品质并立即生成随机属性；失败时按图纸配置处理图纸、材料和金币退款。
@@ -62,13 +62,13 @@ plugins/XyForgeCrafting/config.yml
 
 ```yaml
 gui:
-  title: '&8玄铁锻造台'
+  title: '&8锻造台'
   layout:
     - '111111111'
-    - '143333331'
-    - '113333311'
-    - '155555551'
-    - '111621711'
+    - '141333331'
+    - '111333331'
+    - '111111111'
+    - '151612171'
     - '111111111'
   cons:
     '1':
@@ -87,15 +87,17 @@ gui:
 | `FORGE_REQUIREMENTS` | 按布局槽位从上到下、从左到右显示材料 |
 | `FORGE_BLUEPRINT` | 唯一真实图纸输入；必须且只能配置一个 |
 | `FORGE_START` | 显示成功/失败概率和金币，点击开始 |
-| `FORGE_PROBABILITY` | 依次显示失败与六品质最终概率 |
+| `FORGE_PROBABILITY` | 在一个物品的Lore中汇总失败与全部非零结果概率 |
 | `FORGE_RESULT` | 显示XyItems成品预览 |
 | `CLOSE` | 关闭界面并安全归还未使用图纸 |
 
 推荐使用上面的 `gui.layout + gui.cons` 结构。为兼容最初设计稿，也可以把布局直接写成顶层 `gui:` 列表，并把 `cons:` 放在顶层；两种结构不能在同一文件混用。
 
+每个 `cons` 组件都必须显式填写 `type`。漏写或写错时，配置重载会失败并继续保留当前正在使用的安全快照，不会把该组件默认为背景槽。
+
 所有 `material` 必须使用Bukkit 1.12.2 Material名称。配置不支持1.13扁平化材质名、RGB颜色或现代Paper组件。
 
-如果材料种类或最终结果数量超过布局提供的展示槽位，插件会显示已有内容但拒绝开始锻造，避免GUI隐藏实际条件。
+如果材料种类超过布局提供的 `FORGE_REQUIREMENTS` 槽位，插件会显示已有内容但拒绝开始锻造。概率只需要至少一个 `FORGE_PROBABILITY` 槽位；配置多个时，每个槽位显示相同的完整概率Lore。
 
 ## 配方配置
 
@@ -176,7 +178,45 @@ forge:
 
 它与 `identify.qualities` 下六个品质权重组成一次抽取。GUI展示的失败概率和六品质概率与实际结算使用同一份XyItems快照；成功后返回值已经携带确定品质和随机属性的物品，不会二次抽品质。
 
+概率Lore会忽略最终概率为0的结果。例如XyItems只配置“传说”一个品质并设置 `forge.failure.weight: 0` 时，只显示：
+
+```text
+传说: 100%
+```
+
+失败概率大于0时才显示“失败几率”，其他结果按照XyItems品质配置顺序逐行显示。概率槽数量不再限制可配置的结果数量。
+
 普通右键鉴定由XyItems处理，会忽略 `forge.failure`，因此不会因为锻造失败权重而鉴定失败。
+
+## 锻造者与成功时间
+
+锻造成功后，XyForgeCrafting在XyItems最终成品Lore末尾追加锻造记录。若原Lore最后一行只是分隔线，会先删除该行，再加入：
+
+```text
+------------[ 锻造 ]--------------
+锻造者：XiYouuuuu
+锻造时间：2026-07-30 23:36:18
+----------------------------------
+```
+
+全局格式位于 `config.yml`：
+
+```yaml
+forge-record:
+  enabled: true
+  timezone: 'Asia/Shanghai'
+  time-format: 'yyyy-MM-dd HH:mm:ss'
+  replace-last-separator: true
+  lore:
+    - '&7------------[ &c锻造&7 ]--------------'
+    - '&e锻造者：&7%player_name%'
+    - '&e锻造时间：&7%forge_time%'
+    - '&7----------------------------------'
+```
+
+可用占位符为 `%player_name%`、`%forge_time%` 和 `%recipe_id%`。旧版 `config.yml` 没有 `forge-record` 时会自动使用以上默认值，不需要删除已有配置。
+
+除可见Lore外，成品还通过XyCore写入锻造者UUID、锻造者当时的名字、成功时间戳和配方ID隐藏NBT。普通XyItems鉴定或命令获取的物品不会带锻造记录。
 
 ## 图纸安全
 
@@ -246,7 +286,7 @@ XyForgeCrafting也注册到XyCore重载管理器，可由 `/xycore reload` 调�
 输出：
 
 ```text
-build/libs/XyForgeCrafting-1.0.3.jar
+build/libs/XyForgeCrafting-1.0.4.jar
 ```
 
 编译目标固定为Java 8，仓库内附Paper 1.12.2编译期API。最终JAR不会打入Paper、XyCore或XyItems类。

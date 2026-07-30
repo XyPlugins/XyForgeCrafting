@@ -1,10 +1,11 @@
 package org.xyplugin.xyforgecrafting.gui;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +47,8 @@ public final class ForgeGuiManager implements Listener {
     private final ForgeService forge;
     private final PendingDeliveryStore pending;
     private final Map<UUID, ForgeSession> sessions = new HashMap<UUID, ForgeSession>();
-    private final DecimalFormat percentFormat = new DecimalFormat("0.##");
+    private final DecimalFormat percentFormat = new DecimalFormat("0.##",
+            DecimalFormatSymbols.getInstance(Locale.US));
 
     public ForgeGuiManager(XyForgeCraftingPlugin plugin, ForgeService forge, PendingDeliveryStore pending) {
         this.plugin = plugin;
@@ -379,22 +381,19 @@ public final class ForgeGuiManager implements Listener {
         List<Integer> probabilitySlots = settings.getSlots(GuiComponentType.FORGE_PROBABILITY);
         double success = 0D;
         if (profile.isPresent()) {
-            int outcomeIndex = 0;
             for (ForgeOutcomeProfile.Outcome outcome : profile.get().getOutcomes()) {
-                if (outcomeIndex >= probabilitySlots.size()) {
-                    session.setDisplayOverflow(true);
-                    break;
-                }
-                ItemStack display = new ItemStack(outcome.isFailure() ? Material.BARRIER : Material.INK_SACK, 1);
+                if (!outcome.isFailure()) success += outcome.getProbability();
+            }
+            List<String> probabilityLore = probabilityLore(profile.get().getOutcomes());
+            for (Integer probabilitySlot : probabilitySlots) {
+                ItemStack display = session.getInventory().getItem(probabilitySlot);
+                if (!usable(display)) continue;
                 ItemMeta meta = display.getItemMeta();
                 if (meta != null) {
-                    meta.setDisplayName(Text.color(outcome.getColor() + outcome.getName()));
-                    meta.setLore(Text.colored(Collections.singletonList("&7最终概率: &f"
-                            + percentFormat.format(outcome.getProbability()) + "%")));
+                    meta.setLore(Text.colored(probabilityLore));
                     display.setItemMeta(meta);
                 }
-                if (!outcome.isFailure()) success += outcome.getProbability();
-                session.getInventory().setItem(probabilitySlots.get(outcomeIndex++), display);
+                session.getInventory().setItem(probabilitySlot, display);
             }
         }
 
@@ -514,6 +513,18 @@ public final class ForgeGuiManager implements Listener {
             sanitized.add(cleaned);
         }
         return sanitized;
+    }
+
+    static List<String> probabilityLore(List<ForgeOutcomeProfile.Outcome> outcomes) {
+        DecimalFormat formatter = new DecimalFormat("0.##", DecimalFormatSymbols.getInstance(Locale.US));
+        List<String> lore = new ArrayList<String>();
+        if (outcomes == null) return lore;
+        for (ForgeOutcomeProfile.Outcome outcome : outcomes) {
+            if (outcome == null || outcome.getProbability() <= 0D) continue;
+            String label = outcome.isFailure() ? "失败几率" : outcome.getName();
+            lore.add(outcome.getColor() + label + ": &f" + formatter.format(outcome.getProbability()) + "%");
+        }
+        return lore;
     }
 
     private boolean usable(ItemStack item) {

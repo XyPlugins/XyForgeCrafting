@@ -23,11 +23,12 @@ public final class ForgeSettings {
     private final int animationInterval;
     private final int animationLoops;
     private final DisplayItemSpec animationDisplay;
+    private final ForgeRecordSettings forgeRecord;
 
     private ForgeSettings(String title, List<String> layout, Map<Character, GuiComponent> components,
                           Map<GuiComponentType, List<Integer>> slots, Map<String, String> messages,
                           boolean animationEnabled, int animationInterval, int animationLoops,
-                          DisplayItemSpec animationDisplay) {
+                          DisplayItemSpec animationDisplay, ForgeRecordSettings forgeRecord) {
         this.title = title;
         this.layout = Collections.unmodifiableList(new ArrayList<String>(layout));
         this.components = Collections.unmodifiableMap(new LinkedHashMap<Character, GuiComponent>(components));
@@ -41,6 +42,7 @@ public final class ForgeSettings {
         this.animationInterval = animationInterval;
         this.animationLoops = animationLoops;
         this.animationDisplay = animationDisplay;
+        this.forgeRecord = forgeRecord;
     }
 
     public static ForgeSettings load(File file) throws Exception {
@@ -53,7 +55,7 @@ public final class ForgeSettings {
             if (row == null || row.length() != 9) throw new IllegalArgumentException("gui.layout 每行必须正好9个字符。");
         }
 
-        String title = yaml.getString("gui.title", yaml.getString("title", "&8玄铁锻造台"));
+        String title = yaml.getString("gui.title", yaml.getString("title", "&8锻造台"));
         if (Text.strip(title).length() > 32) throw new IllegalArgumentException("gui.title 去除颜色后不能超过32个字符。");
         ConfigurationSection root = yaml.getConfigurationSection("gui.cons");
         if (root == null) root = yaml.getConfigurationSection("gui.components");
@@ -66,9 +68,12 @@ public final class ForgeSettings {
             if (rawKey.length() != 1) throw new IllegalArgumentException("GUI组件键必须是单个字符: " + rawKey);
             ConfigurationSection section = root.getConfigurationSection(rawKey);
             if (section == null) throw new IllegalArgumentException("GUI组件 " + rawKey + " 必须是配置节点。");
+            if (!section.isString("type") || section.getString("type", "").trim().isEmpty()) {
+                throw new IllegalArgumentException("GUI组件 " + rawKey + " 必须明确填写type。");
+            }
             GuiComponentType type;
             try {
-                type = GuiComponentType.valueOf(section.getString("type", "BACKGROUND").trim().toUpperCase());
+                type = GuiComponentType.valueOf(section.getString("type").trim().toUpperCase());
             } catch (IllegalArgumentException failure) {
                 throw new IllegalArgumentException("GUI组件 " + rawKey + " 的type无效。");
             }
@@ -109,12 +114,24 @@ public final class ForgeSettings {
         boolean animationEnabled = animation == null || animation.getBoolean("enabled", true);
         int interval = animation == null ? 1 : Math.max(1, Math.min(200, animation.getInt("interval-ticks", 1)));
         int loops = animation == null ? 1 : Math.max(1, Math.min(10, animation.getInt("loops", 1)));
-        Material animationMaterial = material(animation == null ? "BLAZE_POWDER" : animation.getString("material", "BLAZE_POWDER"));
+        Material animationMaterial = material(animation == null ? "FIREBALL" : animation.getString("material", "FIREBALL"));
         String animationName = animation == null ? "&6锻造之火" : animation.getString("name", "&6锻造之火");
         DisplayItemSpec animationDisplay = new DisplayItemSpec(animationMaterial, (short) 0, animationName,
                 Collections.<String>emptyList());
+
+        ConfigurationSection record = yaml.getConfigurationSection("forge-record");
+        boolean recordEnabled = record == null || record.getBoolean("enabled", true);
+        String recordTimezone = record == null ? "Asia/Shanghai"
+                : record.getString("timezone", "Asia/Shanghai");
+        String recordTimeFormat = record == null ? "yyyy-MM-dd HH:mm:ss"
+                : record.getString("time-format", "yyyy-MM-dd HH:mm:ss");
+        boolean replaceLastSeparator = record == null || record.getBoolean("replace-last-separator", true);
+        List<String> recordLore = record != null && record.isList("lore")
+                ? record.getStringList("lore") : defaultForgeRecordLore();
+        ForgeRecordSettings forgeRecord = new ForgeRecordSettings(recordEnabled, recordTimezone,
+                recordTimeFormat, replaceLastSeparator, recordLore);
         return new ForgeSettings(title, layout, components, slots, messages, animationEnabled, interval, loops,
-                animationDisplay);
+                animationDisplay, forgeRecord);
     }
 
     private static DisplayItemSpec parseDisplay(ConfigurationSection section, String owner) {
@@ -144,8 +161,18 @@ public final class ForgeSettings {
     public int getAnimationInterval() { return animationInterval; }
     public int getAnimationLoops() { return animationLoops; }
     public DisplayItemSpec getAnimationDisplay() { return animationDisplay; }
+    public ForgeRecordSettings getForgeRecord() { return forgeRecord; }
 
     public String message(String key) {
         return messages.containsKey(key) ? messages.get(key) : "";
+    }
+
+    private static List<String> defaultForgeRecordLore() {
+        List<String> lore = new ArrayList<String>();
+        lore.add("&7------------[ &c锻造&7 ]--------------");
+        lore.add("&e锻造者：&7%player_name%");
+        lore.add("&e锻造时间：&7%forge_time%");
+        lore.add("&7----------------------------------");
+        return lore;
     }
 }

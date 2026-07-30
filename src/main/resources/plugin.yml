@@ -1,5 +1,5 @@
 name: XyForgeCrafting
-version: '1.0.3'
+version: '1.0.4'
 main: org.xyplugin.xyforgecrafting.XyForgeCraftingPlugin
 api-version: '1.12'
 author: XyPlugins

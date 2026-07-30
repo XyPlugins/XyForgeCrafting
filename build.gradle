@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'org.xyplugin'
-version = '1.0.3'
+version = '1.0.4'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -20,6 +20,10 @@ sourceSets {
     }
     main {
         compileClasspath += dependencyStub.output
+    }
+    test {
+        compileClasspath += dependencyStub.output
+        runtimeClasspath += dependencyStub.output
     }
 }
 

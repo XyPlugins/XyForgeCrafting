@@ -1,15 +1,29 @@
-# XyForgeCrafting 1.0.3
+# XyForgeCrafting 1.0.4
 # 仅支持 Paper/Spigot 1.12.2 与 Java 8，不使用 DragonCore GUI。
+# type 对应功能完整说明
+# BACKGROUND：锁定的背景装饰槽，同时作为火焰动画的移动路径。
+# FORGE_REQUIREMENTS：锻造材料展示槽。
+# 放入有效图纸后，按照GUI布局从上到下、从左到右显示所需材料、需要数量和玩家拥有数量。
+# FORGE_BLUEPRINT：锻造图纸槽。
+# 只能放入XyForgeCrafting生成并签名的有效图纸，整个GUI必须且只能配置一个。
+# FORGE_START：开始锻造按钮。
+# 显示锻造成功率、失败率和金币需求，点击后检查条件并播放锻造动画，整个GUI必须且只能配置一个。
+# FORGE_PROBABILITY：锻造概率展示槽。
+# 放入有效图纸后，依次显示锻造失败概率和各个结果的最终概率，至少需要配置一个。
+# FORGE_RESULT：锻造成品预览槽。
+# 放入有效图纸后显示该配方对应的XyItems成品及其交付数量。
+# CLOSE：关闭锻造台按钮。
+# 点击后关闭GUI，并将尚未消耗的锻造图纸安全退回玩家背包。
 
 gui:
-  title: '&8玄铁锻造台'
+  title: '&8锻造台'
   # 每行必须正好9个字符，共1到6行；空格也是锁定槽位。
   layout:
     - '111111111'
-    - '143333331'
-    - '113333311'
-    - '155555551'
-    - '111621711'
+    - '141333331'
+    - '111333331'
+    - '111111111'
+    - '151612171'
     - '111111111'
 
   # 字符组件。布局中只允许一个 FORGE_BLUEPRINT 槽位。
@@ -70,8 +84,21 @@ animation:
   enabled: true
   interval-ticks: 1
   loops: 1
-  material: BLAZE_POWDER
+  material: FIREBALL
   name: '&6锻造之火'
+
+# 锻造成功后写入成品末尾的锻造记录；旧配置缺少本段时也会使用这些默认值。
+forge-record:
+  enabled: true
+  timezone: 'Asia/Shanghai'
+  time-format: 'yyyy-MM-dd HH:mm:ss'
+  # true表示最后一行只是分隔线时先删除，再插入下面的新锻造区块。
+  replace-last-separator: true
+  lore:
+    - '&7------------[ &c锻造&7 ]--------------'
+    - '&e锻造者：&7%player_name%'
+    - '&e锻造时间：&7%forge_time%'
+    - '&7----------------------------------'
 
 messages:
   prefix: '&7[&6XyForgeCrafting&7]&r '
@@ -86,7 +113,7 @@ messages:
   money-missing: '&c金币不足，无法开始锻造。'
   economy-unavailable: '&cVault经济服务不可用。'
   probability-missing: '&c成品没有有效的锻造失败/品质权重。'
-  display-overflow: '&c该配方的材料或概率超过GUI可展示槽位，已拒绝锻造。'
+  display-overflow: '&c该配方的材料超过GUI可展示槽位，已拒绝锻造。'
   already-forging: '&c锻造正在进行中。'
   forge-success: '&a锻造成功！获得了 %result_name%。'
   forge-failure: '&c锻造失败。'
