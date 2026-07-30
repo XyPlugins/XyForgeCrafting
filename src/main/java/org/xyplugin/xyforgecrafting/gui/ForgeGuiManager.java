@@ -9,9 +9,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -55,10 +57,11 @@ public final class ForgeGuiManager implements Listener {
     public void open(Player player) {
         closeSession(player, true, false);
         ForgeSettings settings = plugin.getSettings();
-        ForgeHolder holder = new ForgeHolder(player.getUniqueId());
+        UUID sessionId = UUID.randomUUID();
+        ForgeHolder holder = new ForgeHolder(player.getUniqueId(), sessionId);
         Inventory inventory = Bukkit.createInventory(holder, settings.getSize(), settings.getTitle());
         holder.setInventory(inventory);
-        ForgeSession session = new ForgeSession(player.getUniqueId(), inventory);
+        ForgeSession session = new ForgeSession(player.getUniqueId(), sessionId, inventory);
         sessions.put(player.getUniqueId(), session);
         render(player, session);
         player.openInventory(inventory);
@@ -82,23 +85,36 @@ public final class ForgeGuiManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onClick(InventoryClickEvent event) {
-        ForgeSession session = session(event.getView().getTopInventory());
-        if (session == null || !event.getWhoClicked().getUniqueId().equals(session.getPlayerId())) return;
+        Inventory top = event.getView().getTopInventory();
+        ForgeHolder holder = holder(top);
+        if (holder == null) return;
+        if (!(event.getWhoClicked() instanceof Player)) {
+            deny(event);
+            return;
+        }
         Player player = (Player) event.getWhoClicked();
+        ForgeSession session = session(top);
+        if (session == null || !player.getUniqueId().equals(session.getPlayerId())) {
+            deny(event);
+            closeInvalidViewNextTick(player, holder);
+            return;
+        }
         int topSize = session.getInventory().getSize();
 
         if (session.isBusy()) {
-            event.setCancelled(true);
+            deny(event);
+            synchronizeNextTick(player, session);
             return;
         }
 
         if (event.getClick() == ClickType.DOUBLE_CLICK) {
-            event.setCancelled(true);
+            deny(event);
+            synchronizeNextTick(player, session);
             return;
         }
 
         if (event.getRawSlot() >= 0 && event.getRawSlot() < topSize) {
-            event.setCancelled(true);
+            deny(event);
             GuiComponentType type = typeAt(event.getRawSlot());
             boolean primaryClick = event.getClick() == ClickType.LEFT || event.getClick() == ClickType.RIGHT;
             if (type == GuiComponentType.FORGE_BLUEPRINT) {
@@ -109,34 +125,47 @@ public final class ForgeGuiManager implements Listener {
             } else if (type == GuiComponentType.CLOSE && primaryClick) {
                 player.closeInventory();
             }
+            synchronizeNextTick(player, session);
             return;
         }
 
         if (event.isShiftClick()) {
-            event.setCancelled(true);
+            deny(event);
             placeFromInventory(player, session, event.getCurrentItem(), event);
+            synchronizeNextTick(player, session);
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            ForgeSession current = sessions.get(player.getUniqueId());
-            if (current == session && !current.isBusy()) render(player, current);
-        });
+        synchronizeNextTick(player, session);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDrag(InventoryDragEvent event) {
-        ForgeSession session = session(event.getView().getTopInventory());
-        if (session == null) return;
+        Inventory top = event.getView().getTopInventory();
+        ForgeHolder holder = holder(top);
+        if (holder == null) return;
+        ForgeSession session = session(top);
+        if (session == null || !event.getWhoClicked().getUniqueId().equals(session.getPlayerId())) {
+            event.setCancelled(true);
+            event.setResult(Event.Result.DENY);
+            if (event.getWhoClicked() instanceof Player) {
+                closeInvalidViewNextTick((Player) event.getWhoClicked(), holder);
+            }
+            return;
+        }
         int size = session.getInventory().getSize();
         for (Integer rawSlot : event.getRawSlots()) {
             if (rawSlot < size) {
                 event.setCancelled(true);
+                event.setResult(Event.Result.DENY);
                 int blueprintSlot = plugin.getSettings().getOnlySlot(GuiComponentType.FORGE_BLUEPRINT);
                 if (rawSlot == blueprintSlot && event.getWhoClicked() instanceof Player
                         && !plugin.getBlueprints().identify(event.getOldCursor()).isPresent()) {
                     Player player = (Player) event.getWhoClicked();
                     plugin.send(player, plugin.getBlueprints().hasBlueprintIdentity(event.getOldCursor())
                             ? "blueprint-invalid" : "not-blueprint");
+                }
+                if (event.getWhoClicked() instanceof Player) {
+                    synchronizeNextTick((Player) event.getWhoClicked(), session);
                 }
                 return;
             }
@@ -374,7 +403,7 @@ public final class ForgeGuiManager implements Listener {
             ItemStack result = XyItems.get().createItem(recipe.getResult().getXyItemsId(), 1)
                     .orElse(new ItemStack(Material.BARRIER));
             appendLore(result, "", "&7成品数量: &f" + recipe.getResult().getAmount(),
-                    "&7成功后立即确定品质和随机属性。");
+                    "&7成功后立即确定结果和随机属性。");
             session.getInventory().setItem(resultSlots.get(0), result);
         }
 
@@ -395,7 +424,11 @@ public final class ForgeGuiManager implements Listener {
         if (row >= settings.getLayout().size()) return;
         char key = settings.getLayout().get(row).charAt(column);
         GuiComponent component = settings.getComponent(key);
-        session.getInventory().setItem(slot, component == null ? null : component.getDisplay().create());
+        ItemStack display = component == null ? null : component.getDisplay().create();
+        if (component != null && component.getType() == GuiComponentType.FORGE_PROBABILITY) {
+            sanitizeProbabilityPlaceholder(display);
+        }
+        session.getInventory().setItem(slot, display);
     }
 
     private GuiComponentType typeAt(int slot) {
@@ -406,10 +439,40 @@ public final class ForgeGuiManager implements Listener {
     }
 
     private ForgeSession session(Inventory inventory) {
-        if (inventory == null || !(inventory.getHolder() instanceof ForgeHolder)) return null;
-        ForgeHolder holder = (ForgeHolder) inventory.getHolder();
+        ForgeHolder holder = holder(inventory);
+        if (holder == null) return null;
         ForgeSession session = sessions.get(holder.getOwner());
-        return session != null && session.getInventory() == inventory ? session : null;
+        return session != null && session.matches(holder) ? session : null;
+    }
+
+    private ForgeHolder holder(Inventory inventory) {
+        return inventory != null && inventory.getHolder() instanceof ForgeHolder
+                ? (ForgeHolder) inventory.getHolder() : null;
+    }
+
+    private void deny(InventoryClickEvent event) {
+        event.setCancelled(true);
+        event.setResult(Event.Result.DENY);
+    }
+
+    private void synchronizeNextTick(Player player, ForgeSession session) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            ForgeSession current = sessions.get(player.getUniqueId());
+            if (current != session || !player.isOnline()) return;
+            Inventory top = player.getOpenInventory().getTopInventory();
+            if (session(top) != session) return;
+            if (!current.isBusy()) render(player, current);
+            player.updateInventory();
+        });
+    }
+
+    private void closeInvalidViewNextTick(Player player, ForgeHolder invalidHolder) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            ForgeHolder openHolder = holder(player.getOpenInventory().getTopInventory());
+            if (openHolder == null || !openHolder.getSessionId().equals(invalidHolder.getSessionId())) return;
+            player.closeInventory();
+            plugin.sendRaw(player, "&c锻造会话已失效，请重新使用 /xyfc open。");
+        });
     }
 
     private void closeSession(Player player, boolean returnBlueprint, boolean closeInventory) {
@@ -430,6 +493,27 @@ public final class ForgeGuiManager implements Listener {
         for (String line : lines) lore.add(Text.color(line));
         meta.setLore(lore);
         item.setItemMeta(meta);
+    }
+
+    private void sanitizeProbabilityPlaceholder(ItemStack item) {
+        if (!usable(item)) return;
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null || !meta.hasLore()) return;
+        meta.setLore(sanitizeProbabilityLore(meta.getLore()));
+        item.setItemMeta(meta);
+    }
+
+    static List<String> sanitizeProbabilityLore(List<String> lore) {
+        List<String> sanitized = new ArrayList<String>();
+        if (lore == null) return sanitized;
+        for (String line : lore) {
+            if (line == null) continue;
+            String cleaned = line.replace("失败与品质概率", "锻造概率").replace("品质", "");
+            String plain = ChatColor.stripColor(cleaned).trim();
+            if ("0.0".equals(plain)) continue;
+            sanitized.add(cleaned);
+        }
+        return sanitized;
     }
 
     private boolean usable(ItemStack item) {

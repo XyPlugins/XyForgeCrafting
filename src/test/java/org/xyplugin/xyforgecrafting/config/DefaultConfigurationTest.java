@@ -29,7 +29,7 @@ public class DefaultConfigurationTest {
     public void pluginDescriptorUsesXyfcAndDeclaresGetPermission() {
         YamlConfiguration descriptor = YamlConfiguration.loadConfiguration(
                 new File("src/main/resources/plugin.yml"));
-        assertEquals("1.0.2", descriptor.getString("version"));
+        assertEquals("1.0.3", descriptor.getString("version"));
         assertTrue(descriptor.isConfigurationSection("commands.xyfc"));
         assertTrue(!descriptor.isConfigurationSection("commands.xyff"));
         assertTrue(descriptor.isConfigurationSection("permissions.xyforgecrafting.get"));

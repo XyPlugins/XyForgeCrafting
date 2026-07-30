@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.2
+# XyForgeCrafting 1.0.3
 
 XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持Java 8与Paper/Spigot 1.12.2**。
 
@@ -18,7 +18,7 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 
 安装顺序：
 
-1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.2.jar` 和 `XyForgeCrafting-1.0.2.jar` 放入 `plugins/`。
+1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.2.jar` 和 `XyForgeCrafting-1.0.3.jar` 放入 `plugins/`。
 2. 需要读取灵魂仓库时同时安装 `XySoulSpace-1.1.1.jar`。
 3. 完整重启服务器，不使用Bukkit `/reload`。
 4. 插件生成 `plugins/XyForgeCrafting/config.yml`、`ForgeRecipe/Example.yml` 和图纸签名密钥。
@@ -246,7 +246,7 @@ XyForgeCrafting也注册到XyCore重载管理器，可由 `/xycore reload` 调�
 输出：
 
 ```text
-build/libs/XyForgeCrafting-1.0.2.jar
+build/libs/XyForgeCrafting-1.0.3.jar
 ```
 
 编译目标固定为Java 8，仓库内附Paper 1.12.2编译期API。最终JAR不会打入Paper、XyCore或XyItems类。

@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.2
+# XyForgeCrafting 1.0.3
 # 仅支持 Paper/Spigot 1.12.2 与 Java 8，不使用 DragonCore GUI。
 
 gui:
@@ -50,7 +50,7 @@ gui:
         data: 8
         name: '&7等待概率'
         lore:
-          - '&8放入图纸后显示失败与品质概率。'
+          - '&8放入图纸后显示锻造概率。'
     '6':
       type: FORGE_RESULT
       display:
