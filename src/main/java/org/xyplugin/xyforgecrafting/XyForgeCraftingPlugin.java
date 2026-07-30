@@ -20,7 +20,7 @@ import org.xyplugin.xyforgecrafting.service.PendingDeliveryStore;
 import org.xyplugin.xyforgecrafting.util.Text;
 import org.xyplugin.xyitems.api.XyItems;
 
-/** XyForgeCrafting 1.0.1, intentionally targeting only Paper/Spigot 1.12.2. */
+/** XyForgeCrafting, intentionally targeting only Paper/Spigot 1.12.2. */
 public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadable {
     private ForgeSettings settings;
     private RecipeRegistry recipes = RecipeRegistry.empty();
@@ -56,12 +56,13 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
         gui = new ForgeGuiManager(this, forge, pending);
         Bukkit.getPluginManager().registerEvents(gui, this);
         XyForgeCommand command = new XyForgeCommand(this);
-        if (getCommand("xyff") != null) {
-            getCommand("xyff").setExecutor(command);
-            getCommand("xyff").setTabCompleter(command);
+        if (getCommand("xyfc") != null) {
+            getCommand("xyfc").setExecutor(command);
+            getCommand("xyfc").setTabCompleter(command);
         }
         XyCore.get().getReloads().register(this);
-        getLogger().info("XyForgeCrafting 1.0.1 已启用，仅支持Paper/Spigot 1.12.2。已加载配方: " + recipes.size());
+        getLogger().info("XyForgeCrafting " + getDescription().getVersion()
+                + " 已启用，仅支持Paper/Spigot 1.12.2。已加载配方: " + recipes.size());
     }
 
     @Override

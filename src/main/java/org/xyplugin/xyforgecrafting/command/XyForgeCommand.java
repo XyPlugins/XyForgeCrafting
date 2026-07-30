@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -17,6 +18,7 @@ import org.xyplugin.xyforgecrafting.recipe.RecipeDefinition;
 import org.xyplugin.xyforgecrafting.util.Text;
 
 public final class XyForgeCommand implements CommandExecutor, TabCompleter {
+    private static final int MAX_BLUEPRINT_AMOUNT = 64;
     private final XyForgeCraftingPlugin plugin;
 
     public XyForgeCommand(XyForgeCraftingPlugin plugin) {
@@ -25,8 +27,9 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String sub = args.length == 0 ? "help" : args[0].toLowerCase();
+        String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
         if ("open".equals(sub)) return open(sender);
+        if ("get".equals(sub)) return get(sender, args);
         if ("give".equals(sub)) return give(sender, args);
         if ("list".equals(sub)) return list(sender);
         if ("reload".equals(sub)) return reload(sender);
@@ -53,7 +56,7 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 3) {
-            sender.sendMessage(Text.color("&c用法: /xyff give <玩家> <配方ID> [数量]"));
+            sender.sendMessage(Text.color("&c用法: /xyfc give <玩家> <配方ID> [数量]"));
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[1]);
@@ -61,21 +64,41 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(Text.color("&c玩家不在线: " + args[1]));
             return true;
         }
-        Optional<RecipeDefinition> recipe = plugin.getRecipeRegistry().find(args[2]);
+        return deliverBlueprint(sender, target, args[2], args.length >= 4 ? args[3] : null, true);
+    }
+
+    private boolean get(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("xyforgecrafting.get")) {
+            plugin.send(sender, "no-permission");
+            return true;
+        }
+        if (!(sender instanceof Player)) {
+            plugin.send(sender, "player-only");
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(Text.color("&c用法: /xyfc get <配方ID> [数量]"));
+            return true;
+        }
+        return deliverBlueprint(sender, (Player) sender, args[1], args.length >= 3 ? args[2] : null, false);
+    }
+
+    private boolean deliverBlueprint(CommandSender sender, Player target, String recipeId,
+                                     String amountText, boolean administrativeGive) {
+        Optional<RecipeDefinition> recipe = plugin.getRecipeRegistry().find(recipeId);
         if (!recipe.isPresent()) {
-            sender.sendMessage(Text.color("&c不存在或未启用的配方: " + args[2]));
+            sender.sendMessage(Text.color("&c不存在或未启用的配方: " + recipeId));
             return true;
         }
         int amount = 1;
-        if (args.length >= 4) {
+        if (amountText != null) {
             try {
-                amount = Integer.parseInt(args[3]);
+                amount = Integer.parseInt(amountText);
             } catch (NumberFormatException failure) {
-                sender.sendMessage(Text.color("&c数量必须是1到64的整数。"));
-                return true;
+                amount = 0;
             }
         }
-        if (amount <= 0 || amount > 64) {
+        if (amount <= 0 || amount > MAX_BLUEPRINT_AMOUNT) {
             sender.sendMessage(Text.color("&c数量必须是1到64的整数。"));
             return true;
         }
@@ -92,8 +115,14 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             plugin.getPending().returnOrQueue(target, stack);
             remaining -= stack.getAmount();
         }
-        sender.sendMessage(Text.color("&a已给予 " + target.getName() + " " + amount + " 张 "
-                + recipe.get().getBlueprint().getDisplayName() + "&a。"));
+        if (administrativeGive) {
+            sender.sendMessage(Text.color("&a已给予 " + target.getName() + " " + amount + " 张 "
+                    + recipe.get().getBlueprint().getDisplayName() + "&a。"));
+        }
+        if (!administrativeGive || sender != target) {
+            target.sendMessage(Text.color("&a获得了 " + amount + " 张 "
+                    + recipe.get().getBlueprint().getDisplayName() + "&a。"));
+        }
         return true;
     }
 
@@ -117,29 +146,64 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage(Text.color("&6=== XyForgeCrafting 1.0.1 ==="));
-        sender.sendMessage(Text.color("&e/xyff open &7- 打开锻造台"));
-        if (sender.hasPermission("xyforgecrafting.list")) sender.sendMessage(Text.color("&e/xyff list &7- 查看配方"));
-        if (sender.hasPermission("xyforgecrafting.give")) sender.sendMessage(Text.color("&e/xyff give <玩家> <配方ID> [数量] &7- 生成签名图纸"));
-        if (sender.hasPermission("xyforgecrafting.reload")) sender.sendMessage(Text.color("&e/xyff reload &7- 安全重载"));
+        sender.sendMessage(Text.color("&6=== XyForgeCrafting " + plugin.getDescription().getVersion() + " ==="));
+        sender.sendMessage(Text.color("&e/xyfc open &7- 打开锻造台"));
+        if (sender instanceof Player && sender.hasPermission("xyforgecrafting.get")) {
+            sender.sendMessage(Text.color("&e/xyfc get <配方ID> [数量] &7- 获得签名图纸"));
+        }
+        if (sender.hasPermission("xyforgecrafting.list")) {
+            sender.sendMessage(Text.color("&e/xyfc list &7- 查看配方"));
+        }
+        if (sender.hasPermission("xyforgecrafting.give")) {
+            sender.sendMessage(Text.color("&e/xyfc give <玩家> <配方ID> [数量] &7- 给予签名图纸"));
+        }
+        if (sender.hasPermission("xyforgecrafting.reload")) {
+            sender.sendMessage(Text.color("&e/xyfc reload &7- 安全重载"));
+        }
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1) return filter(Arrays.asList("open", "give", "list", "reload", "help"), args[0]);
-        if (args.length == 2 && "give".equalsIgnoreCase(args[0])) {
+        if (args.length == 1) {
+            List<String> subcommands = new ArrayList<String>();
+            if (sender.hasPermission("xyforgecrafting.use")) subcommands.add("open");
+            if (sender instanceof Player && sender.hasPermission("xyforgecrafting.get")) subcommands.add("get");
+            if (sender.hasPermission("xyforgecrafting.give")) subcommands.add("give");
+            if (sender.hasPermission("xyforgecrafting.list")) subcommands.add("list");
+            if (sender.hasPermission("xyforgecrafting.reload")) subcommands.add("reload");
+            subcommands.add("help");
+            return filter(subcommands, args[0]);
+        }
+        if (args.length == 2 && "get".equalsIgnoreCase(args[0])
+                && sender instanceof Player && sender.hasPermission("xyforgecrafting.get")) {
+            return filter(plugin.getRecipeRegistry().getIds(), args[1]);
+        }
+        if (args.length == 3 && "get".equalsIgnoreCase(args[0])
+                && sender instanceof Player && sender.hasPermission("xyforgecrafting.get")) {
+            return filter(Arrays.asList("1", "16", "32", "64"), args[2]);
+        }
+        if (args.length == 2 && "give".equalsIgnoreCase(args[0])
+                && sender.hasPermission("xyforgecrafting.give")) {
             List<String> names = new ArrayList<String>();
             for (Player player : Bukkit.getOnlinePlayers()) names.add(player.getName());
             return filter(names, args[1]);
         }
-        if (args.length == 3 && "give".equalsIgnoreCase(args[0])) return filter(plugin.getRecipeRegistry().getIds(), args[2]);
+        if (args.length == 3 && "give".equalsIgnoreCase(args[0])
+                && sender.hasPermission("xyforgecrafting.give")) {
+            return filter(plugin.getRecipeRegistry().getIds(), args[2]);
+        }
+        if (args.length == 4 && "give".equalsIgnoreCase(args[0])
+                && sender.hasPermission("xyforgecrafting.give")) {
+            return filter(Arrays.asList("1", "16", "32", "64"), args[3]);
+        }
         return Collections.emptyList();
     }
 
     private List<String> filter(List<String> values, String prefix) {
         List<String> result = new ArrayList<String>();
-        String lower = prefix == null ? "" : prefix.toLowerCase();
-        for (String value : values) if (value.toLowerCase().startsWith(lower)) result.add(value);
+        String lower = prefix == null ? "" : prefix.toLowerCase(Locale.ROOT);
+        for (String value : values) if (value.toLowerCase(Locale.ROOT).startsWith(lower)) result.add(value);
+        Collections.sort(result, String.CASE_INSENSITIVE_ORDER);
         return result;
     }
 }

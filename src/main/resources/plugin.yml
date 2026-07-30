@@ -1,5 +1,5 @@
 name: XyForgeCrafting
-version: '1.0.1'
+version: '1.0.2'
 main: org.xyplugin.xyforgecrafting.XyForgeCraftingPlugin
 api-version: '1.12'
 author: XyPlugins
@@ -8,9 +8,9 @@ depend: [XyCore, XyItems]
 softdepend: [XySoulSpace]
 
 commands:
-  xyff:
+  xyfc:
     description: XyForgeCrafting main command
-    usage: /xyff <open|give|list|reload|help>
+    usage: /xyfc <open|get|give|list|reload|help>
     aliases: [xyforge, xyforgecrafting]
 
 permissions:
@@ -19,6 +19,9 @@ permissions:
     default: true
   xyforgecrafting.give:
     description: Allows giving signed forge blueprints.
+    default: op
+  xyforgecrafting.get:
+    description: Allows players to obtain signed forge blueprints for themselves.
     default: op
   xyforgecrafting.list:
     description: Allows listing loaded recipes.

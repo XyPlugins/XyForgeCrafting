@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.1
+# XyForgeCrafting 1.0.2
 
 XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持Java 8与Paper/Spigot 1.12.2**。
 
@@ -18,15 +18,15 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 
 安装顺序：
 
-1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.2.jar` 和 `XyForgeCrafting-1.0.1.jar` 放入 `plugins/`。
+1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.2.jar` 和 `XyForgeCrafting-1.0.2.jar` 放入 `plugins/`。
 2. 需要读取灵魂仓库时同时安装 `XySoulSpace-1.1.1.jar`。
 3. 完整重启服务器，不使用Bukkit `/reload`。
 4. 插件生成 `plugins/XyForgeCrafting/config.yml`、`ForgeRecipe/Example.yml` 和图纸签名密钥。
-5. 先确认XyItems成品ID与材料ID存在，再使用 `/xyff reload`。
+5. 先确认XyItems成品ID与材料ID存在，再使用 `/xyfc reload`。
 
 ## 玩家流程
 
-1. 玩家输入 `/xyff open` 打开锻造台。
+1. 玩家输入 `/xyfc open` 打开锻造台。
 2. 唯一的图纸槽只接受XyForgeCrafting生成并签名的图纸。
 3. 放入有效图纸后，GUI显示材料拥有量、金币、失败概率、六品质最终概率和成品预览。
 4. 材料默认统计 `灵魂仓库 + 主背包36格`，默认优先扣灵魂仓库，再扣背包。
@@ -39,13 +39,16 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 
 | 命令 | 说明 | 权限 |
 | --- | --- | --- |
-| `/xyff open` | 打开锻造台 | `xyforgecrafting.use` |
-| `/xyff give <玩家> <配方ID> [数量]` | 生成带签名的真实图纸 | `xyforgecrafting.give` |
-| `/xyff list` | 查看已加载配方ID | `xyforgecrafting.list` |
-| `/xyff reload` | 全量校验后安全重载 | `xyforgecrafting.reload` |
-| `/xyff help` | 查看帮助 | 无 |
+| `/xyfc open` | 打开锻造台 | `xyforgecrafting.use` |
+| `/xyfc get <配方ID> [数量]` | 玩家为自己取得签名图纸，数量默认1、最大64 | `xyforgecrafting.get` |
+| `/xyfc give <玩家> <配方ID> [数量]` | 给予指定在线玩家签名图纸 | `xyforgecrafting.give` |
+| `/xyfc list` | 查看已加载配方ID | `xyforgecrafting.list` |
+| `/xyfc reload` | 全量校验后安全重载 | `xyforgecrafting.reload` |
+| `/xyfc help` | 查看帮助 | 无 |
 
 主命令别名为 `/xyforge` 和 `/xyforgecrafting`。
+
+`xyforgecrafting.get` 默认只授予OP，避免普通玩家随意生成图纸；如需提供给管理组或测试组，请通过权限插件单独授权。`get` 与 `give` 都根据配方ID生成带当前服务器HMAC签名的真实图纸，不能用普通物品名称伪造。
 
 ## GUI配置
 
@@ -145,7 +148,7 @@ recipe:
 - `blueprint.display-name/lore`：图纸玩家可见外观，不参与真伪判断。
 - `result.item`：当前固定使用 `xyitems:<成品ID>`。
 - `requirements`：完整物品库ID到数量的简单映射，无需重复配置来源和扣除顺序。
-- `economy.type`：1.0.1只支持 `VAULT`；`amount: 0` 表示不收费。
+- `economy.type`：当前版本只支持 `VAULT`；`amount: 0` 表示不收费。
 - `outcomes.success.commands`：成功交付成品后执行，可用 `console:` 或 `player:` 前缀。
 - `outcomes.failure.blueprint`：`DESTROY`销毁图纸，`RETURN`保留图纸。
 - 退款百分比必须为0到100，物品按实际扣除记录向下取整返还。
@@ -225,7 +228,7 @@ plugins/XyForgeCrafting/pending-returns.yml
 使用：
 
 ```text
-/xyff reload
+/xyfc reload
 ```
 
 插件先将新GUI和全部配方加载到候选快照，并验证图纸模板、每项材料、XyItems成品及其锻造概率都能被当前物品库读取。只有所有内容通过校验时才替换当前配置；任一文件错误时返回失败并继续使用旧快照。成功替换前会关闭现有锻造界面并归还图纸。
@@ -243,7 +246,7 @@ XyForgeCrafting也注册到XyCore重载管理器，可由 `/xycore reload` 调�
 输出：
 
 ```text
-build/libs/XyForgeCrafting-1.0.1.jar
+build/libs/XyForgeCrafting-1.0.2.jar
 ```
 
 编译目标固定为Java 8，仓库内附Paper 1.12.2编译期API。最终JAR不会打入Paper、XyCore或XyItems类。
