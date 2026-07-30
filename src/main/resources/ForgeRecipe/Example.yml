@@ -1,0 +1,44 @@
+# XyForgeCrafting 示例配方
+# 首次启动后生成到：plugins/XyForgeCrafting/ForgeRecipe/Example.yml
+
+recipe:
+  # 配方是否启用
+  enabled: true
+  # 配方内部唯一ID，发布后尽量不要修改
+  id: 'example_forge_soul'
+  # 配方显示名称
+  name: '&a示例墨魂'
+
+  # 图纸设置；隐藏身份和签名由插件自动写入，不需要配置。
+  blueprint:
+    template: 'minecraft:GLOWSTONE_DUST'
+    display-name: '&a示例墨魂锻造图'
+    lore:
+      - '&e这是示例墨魂的锻造图纸。'
+      - '&e放入锻造台后显示材料与最终概率。'
+
+  # 成功后由XyItems立即生成已经确定品质和属性的成品。
+  result:
+    item: 'xyitems:example_forge_soul'
+    amount: 1
+
+  # 默认统计灵魂仓库和背包，默认优先扣灵魂仓库，再扣背包。
+  requirements:
+    'minecraft:IRON_INGOT': 16
+    'xyitems:example_forge_crystal': 1
+
+  economy:
+    type: VAULT
+    amount: 1000
+
+  outcomes:
+    success:
+      commands:
+        - 'console:say 玩家 %player_name% 锻造成功了 %result_name_plain%，让我们恭喜他！'
+    failure:
+      # DESTROY销毁图纸，RETURN退还图纸。
+      blueprint: DESTROY
+      refund:
+        materials-percent: 50
+        money-percent: 0
+      message: '&c锻造失败，返还了部分材料。'

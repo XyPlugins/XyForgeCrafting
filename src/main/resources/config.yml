@@ -1,0 +1,97 @@
+# XyForgeCrafting 1.0.1
+# 仅支持 Paper/Spigot 1.12.2 与 Java 8，不使用 DragonCore GUI。
+
+gui:
+  title: '&8玄铁锻造台'
+  # 每行必须正好9个字符，共1到6行；空格也是锁定槽位。
+  layout:
+    - '111111111'
+    - '143333331'
+    - '113333311'
+    - '155555551'
+    - '111621711'
+    - '111111111'
+
+  # 字符组件。布局中只允许一个 FORGE_BLUEPRINT 槽位。
+  cons:
+    '1':
+      type: BACKGROUND
+      display:
+        material: STAINED_GLASS_PANE
+        data: 15
+        name: '&8锻造台边框'
+        lore:
+          - '&7锻造之火正在沉睡。'
+    '2':
+      type: FORGE_START
+      display:
+        material: ANVIL
+        name: '&a点击开始锻造'
+        lore:
+          - '&7放入有效图纸后可开始。'
+    '3':
+      type: FORGE_REQUIREMENTS
+      display:
+        material: BARRIER
+        name: '&7等待图纸'
+        lore:
+          - '&8放入图纸后显示所需材料。'
+    '4':
+      type: FORGE_BLUEPRINT
+      display:
+        material: EMPTY_MAP
+        name: '&e放入锻造图纸'
+        lore:
+          - '&7这里只接受本插件签名的图纸。'
+    '5':
+      type: FORGE_PROBABILITY
+      display:
+        material: INK_SACK
+        data: 8
+        name: '&7等待概率'
+        lore:
+          - '&8放入图纸后显示失败与品质概率。'
+    '6':
+      type: FORGE_RESULT
+      display:
+        material: CHEST
+        name: '&6锻造成品'
+        lore:
+          - '&8放入图纸后显示成品。'
+    '7':
+      type: CLOSE
+      display:
+        material: BARRIER
+        name: '&c关闭锻造台'
+        lore:
+          - '&7未使用的图纸会安全退回。'
+
+animation:
+  enabled: true
+  interval-ticks: 1
+  loops: 1
+  material: BLAZE_POWDER
+  name: '&6锻造之火'
+
+messages:
+  prefix: '&7[&6XyForgeCrafting&7]&r '
+  no-permission: '&c你没有权限执行这个操作。'
+  player-only: '&c该命令只能由玩家执行。'
+  opened: '&a已打开锻造台。'
+  not-blueprint: '&c当前放入的不是图纸。'
+  blueprint-invalid: '&c图纸签名无效或对应配方未启用。'
+  blueprint-occupied: '&c图纸槽中已经有一张图纸。'
+  inventory-full: '&c背包至少需要一个空格，无法开始锻造。'
+  requirements-missing: '&c材料不足，无法开始锻造。'
+  money-missing: '&c金币不足，无法开始锻造。'
+  economy-unavailable: '&cVault经济服务不可用。'
+  probability-missing: '&c成品没有有效的锻造失败/品质权重。'
+  display-overflow: '&c该配方的材料或概率超过GUI可展示槽位，已拒绝锻造。'
+  already-forging: '&c锻造正在进行中。'
+  forge-success: '&a锻造成功！获得了 %result_name%。'
+  forge-failure: '&c锻造失败。'
+  transaction-failed: '&c锻造事务未能完成，已返还可恢复的投入。'
+  reload-success: '&a锻造配置重载成功。'
+  reload-failed: '&c锻造配置重载失败，已保留当前配置。请查看控制台。'
+  pending-return: '&e背包空间不足，图纸或退款物品已进入安全待领取队列。'
+  pending-delivered: '&a已领取此前未能退回的锻造图纸。'

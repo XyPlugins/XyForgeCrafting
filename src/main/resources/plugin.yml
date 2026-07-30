@@ -1,0 +1,28 @@
+name: XyForgeCrafting
+version: '1.0.1'
+main: org.xyplugin.xyforgecrafting.XyForgeCraftingPlugin
+api-version: '1.12'
+author: XyPlugins
+description: Xy series transactional forging system for Paper/Spigot 1.12.2 only.
+depend: [XyCore, XyItems]
+softdepend: [XySoulSpace]
+
+commands:
+  xyff:
+    description: XyForgeCrafting main command
+    usage: /xyff <open|give|list|reload|help>
+    aliases: [xyforge, xyforgecrafting]
+
+permissions:
+  xyforgecrafting.use:
+    description: Allows opening and using the forge.
+    default: true
+  xyforgecrafting.give:
+    description: Allows giving signed forge blueprints.
+    default: op
+  xyforgecrafting.list:
+    description: Allows listing loaded recipes.
+    default: op
+  xyforgecrafting.reload:
+    description: Allows safely reloading forge configuration.
+    default: op

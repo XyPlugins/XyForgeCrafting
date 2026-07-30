@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.xyplugin'
+version = '1.0.1'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets {
+    dependencyStub {
+        java.srcDir 'src/stub/java'
+    }
+    main {
+        compileClasspath += dependencyStub.output
+    }
+}
+
+dependencies {
+    compileOnly files('libs/paper-api-1.12.2-R0.1-SNAPSHOT.jar')
+    compileOnly files('libs/bungeecord-chat-1.12-SNAPSHOT.jar')
+    dependencyStubCompileOnly files('libs/paper-api-1.12.2-R0.1-SNAPSHOT.jar')
+    dependencyStubCompileOnly files('libs/bungeecord-chat-1.12-SNAPSHOT.jar')
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation files('libs/paper-api-1.12.2-R0.1-SNAPSHOT.jar')
+    testImplementation files('libs/bungeecord-chat-1.12-SNAPSHOT.jar')
+    testImplementation 'com.google.guava:guava:21.0'
+    testImplementation 'com.google.code.gson:gson:2.8.0'
+    testImplementation 'org.yaml:snakeyaml:1.19'
+    testImplementation 'commons-lang:commons-lang:2.6'
+}
+
+compileJava.dependsOn compileDependencyStubJava
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    archiveFileName = "XyForgeCrafting-${project.version}.jar"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes(
+                'Implementation-Title': 'XyForgeCrafting',
+                'Implementation-Version': project.version
+        )
+    }
+}
