@@ -22,6 +22,8 @@ import org.xyplugin.xyitems.api.XyItems;
 
 /** XyForgeCrafting, intentionally targeting only Paper/Spigot 1.12.2. */
 public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadable {
+    private static final String DEFAULT_LOCAL_PREFIX = "&7[&6XyForgeCrafting&7]&r ";
+
     private ForgeSettings settings;
     private RecipeRegistry recipes = RecipeRegistry.empty();
     private BlueprintService blueprints;
@@ -113,7 +115,7 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
             itemApi.getClass().getMethod("deliverItems", Player.class, java.util.List.class);
             return true;
         } catch (Throwable failure) {
-            getLogger().severe("依赖API版本不兼容。需要XyCore 0.3.11和XyItems 1.0.5: " + failure.getMessage());
+            getLogger().severe("依赖API版本不兼容。建议使用XyCore 0.3.12和XyItems 1.0.6: " + failure.getMessage());
             return false;
         }
     }
@@ -147,8 +149,34 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
 
     public void sendRaw(CommandSender sender, String message) {
         if (sender == null || message == null || message.isEmpty()) return;
-        String prefix = XyCore.get().getMessagePrefix();
-        sender.sendMessage(Text.color(prefix + message));
+        if (sender instanceof Player) {
+            sendPlayerRaw((Player) sender, message);
+        } else {
+            sendLocalRaw(sender, message);
+        }
+    }
+
+    public void sendPlayer(Player player, String messageKey) {
+        sendPlayerRaw(player, settings == null ? "" : settings.message(messageKey));
+    }
+
+    public void sendPlayerRaw(Player player, String message) {
+        if (player == null || message == null || message.isEmpty()) return;
+        player.sendMessage(Text.color(XyCore.get().getMessagePrefix() + message));
+    }
+
+    public void sendLocal(CommandSender sender, String messageKey) {
+        sendLocalRaw(sender, settings == null ? "" : settings.message(messageKey));
+    }
+
+    public void sendLocalRaw(CommandSender sender, String message) {
+        if (sender == null || message == null || message.isEmpty()) return;
+        sender.sendMessage(Text.color(localPrefix() + message));
+    }
+
+    private String localPrefix() {
+        String configured = settings == null ? null : settings.message("prefix");
+        return configured == null || configured.trim().isEmpty() ? DEFAULT_LOCAL_PREFIX : configured;
     }
 
     @Override

@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.7
+# XyForgeCrafting 1.0.8
 
 XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持Java 8与Paper/Spigot 1.12.2**。
 
@@ -10,16 +10,16 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 
 - Paper 1.12.2 build 1620
 - Java 8
-- XyCore 0.3.11
-- XyItems 1.0.5
-- XySoulSpace 1.1.2，可选
+- XyCore 0.3.12
+- XyItems 1.0.6
+- XySoulSpace 1.1.3，可选
 - Vault和一个经济插件；配方金币为0时可以不使用经济
 - MythicMobs 4.11，可选；仅在配方引用 `mythicmobs:` 材料时需要
 
 安装顺序：
 
-1. 将 `XyCore-0.3.11.jar`、`XyItems-1.0.5.jar` 和 `XyForgeCrafting-1.0.7.jar` 放入 `plugins/`。
-2. 需要读取灵魂仓库时同时安装 `XySoulSpace-1.1.2.jar`。
+1. 将 `XyCore-0.3.12.jar`、`XyItems-1.0.6.jar` 和 `XyForgeCrafting-1.0.8.jar` 放入 `plugins/`。
+2. 需要读取灵魂仓库时同时安装 `XySoulSpace-1.1.3.jar`。
 3. 完整重启服务器，不使用Bukkit `/reload`。
 4. 插件生成 `plugins/XyForgeCrafting/config.yml` 和 `ForgeRecipe/Example.yml`。
 5. 先确认XyItems成品ID与材料ID存在，再使用 `/xyfc reload`。
@@ -52,9 +52,9 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 
 ## 玩家消息前缀
 
-XyForgeCrafting 是强依赖 XyCore 的锻造插件。发送给玩家或命令发送者的聊天提示统一读取 `plugins/XyCore/config.yml -> messages.prefix`，包括 `/xyfc` 命令提示、非图纸拒绝提示、条件不足提示和锻造结果提示。
+XyForgeCrafting 是强依赖 XyCore 的锻造插件。玩家在锻造台内看到的玩法结果统一读取 `plugins/XyCore/config.yml -> messages.prefix`，包括非图纸拒绝、材料/金币不足、待领取退回、锻造成功和锻造失败。
 
-`config.yml -> messages.prefix` 只作为旧配置兼容保留，当前玩家聊天提示会优先使用 XyCore。控制台启动、重载和配置错误日志仍保留 `[XyForgeCrafting]`，不会混成 XyCore 名称。
+`/xyfc help/list/reload/get/give` 的权限不足、参数错误、配方不存在、管理员给予反馈等管理/排错提示保留 XyForgeCrafting 自身前缀。`config.yml -> messages.prefix` 作为本地管理前缀和旧配置兼容保留；控制台启动、重载和配置错误日志仍保留 `[XyForgeCrafting]`，不会混成 XyCore 名称。
 
 ## GUI配置
 
@@ -313,7 +313,7 @@ XyForgeCrafting也注册到XyCore重载管理器，可由 `/xycore reload` 调�
 输出：
 
 ```text
-build/libs/XyForgeCrafting-1.0.7.jar
+build/libs/XyForgeCrafting-1.0.8.jar
 ```
 
 编译目标固定为Java 8，仓库内附Paper 1.12.2编译期API。最终JAR不会打入Paper、XyCore或XyItems类。

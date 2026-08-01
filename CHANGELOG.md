@@ -1,5 +1,13 @@
 # XyForgeCrafting 更新说明
 
+## 1.0.8 - 2026-08-02
+
+- 按服主最终确认调整聊天前缀语义：GUI内非图纸、材料不足、锻造成功/失败、待领取退回等玩家玩法提示走 XyCore `messages.prefix`。
+- `/xyfc help/list/reload/get/give` 的权限不足、参数错误、配方不存在和管理员反馈保留 XyForgeCrafting 自身前缀。
+- 新增 `sendPlayer/sendLocal` 与 raw 变体，保留旧 `send/sendRaw` 给玩家玩法流程兼容使用，同时命令类显式走本地前缀。
+- 本次只调整前缀分流，不改变图纸固定NBT身份、事务扣除、失败退款、概率抽取、动画路径和待领取队列。
+- 同步推荐依赖至 XyCore 0.3.12、XyItems 1.0.6、XySoulSpace 1.1.3。
+
 ## 1.0.7 - 2026-08-02
 
 - 玩家聊天提示前缀改为统一读取 `XyCoreApi#getMessagePrefix()`，即 XyCore `config.yml -> messages.prefix`。

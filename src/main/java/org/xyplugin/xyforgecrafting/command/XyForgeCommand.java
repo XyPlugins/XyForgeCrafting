@@ -38,11 +38,11 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
 
     private boolean open(CommandSender sender) {
         if (!(sender instanceof Player)) {
-            plugin.send(sender, "player-only");
+            plugin.sendLocal(sender, "player-only");
             return true;
         }
         if (!sender.hasPermission("xyforgecrafting.use")) {
-            plugin.send(sender, "no-permission");
+            plugin.sendLocal(sender, "no-permission");
             return true;
         }
         plugin.getGui().open((Player) sender);
@@ -51,16 +51,16 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
 
     private boolean give(CommandSender sender, String[] args) {
         if (!sender.hasPermission("xyforgecrafting.give")) {
-            plugin.send(sender, "no-permission");
+            plugin.sendLocal(sender, "no-permission");
             return true;
         }
         if (args.length < 3) {
-            plugin.sendRaw(sender, "&c用法: /xyfc give <玩家> <配方ID> [数量]");
+            plugin.sendLocalRaw(sender, "&c用法: /xyfc give <玩家> <配方ID> [数量]");
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[1]);
         if (target == null) {
-            plugin.sendRaw(sender, "&c玩家不在线: " + args[1]);
+            plugin.sendLocalRaw(sender, "&c玩家不在线: " + args[1]);
             return true;
         }
         return deliverBlueprint(sender, target, args[2], args.length >= 4 ? args[3] : null, true);
@@ -68,15 +68,15 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
 
     private boolean get(CommandSender sender, String[] args) {
         if (!sender.hasPermission("xyforgecrafting.get")) {
-            plugin.send(sender, "no-permission");
+            plugin.sendLocal(sender, "no-permission");
             return true;
         }
         if (!(sender instanceof Player)) {
-            plugin.send(sender, "player-only");
+            plugin.sendLocal(sender, "player-only");
             return true;
         }
         if (args.length < 2) {
-            plugin.sendRaw(sender, "&c用法: /xyfc get <配方ID> [数量]");
+            plugin.sendLocalRaw(sender, "&c用法: /xyfc get <配方ID> [数量]");
             return true;
         }
         return deliverBlueprint(sender, (Player) sender, args[1], args.length >= 3 ? args[2] : null, false);
@@ -86,7 +86,7 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
                                      String amountText, boolean administrativeGive) {
         Optional<RecipeDefinition> recipe = plugin.getRecipeRegistry().find(recipeId);
         if (!recipe.isPresent()) {
-            plugin.sendRaw(sender, "&c不存在或未启用的配方: " + recipeId);
+            plugin.sendLocalRaw(sender, "&c不存在或未启用的配方: " + recipeId);
             return true;
         }
         int amount = 1;
@@ -98,12 +98,12 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             }
         }
         if (amount <= 0 || amount > MAX_BLUEPRINT_AMOUNT) {
-            plugin.sendRaw(sender, "&c数量必须是1到64的整数。");
+            plugin.sendLocalRaw(sender, "&c数量必须是1到64的整数。");
             return true;
         }
         Optional<ItemStack> blueprint = plugin.getBlueprints().create(recipe.get(), 1);
         if (!blueprint.isPresent()) {
-            plugin.sendRaw(sender, "&c图纸基础物品无法生成，请检查blueprint.material。");
+            plugin.sendLocalRaw(sender, "&c图纸基础物品无法生成，请检查blueprint.material。");
             return true;
         }
         int remaining = amount;
@@ -115,11 +115,11 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             remaining -= stack.getAmount();
         }
         if (administrativeGive) {
-            plugin.sendRaw(sender, "&a已给予 " + target.getName() + " " + amount + " 张 "
+            plugin.sendLocalRaw(sender, "&a已给予 " + target.getName() + " " + amount + " 张 "
                     + recipe.get().getBlueprint().getDisplayName() + "&a。");
         }
         if (!administrativeGive || sender != target) {
-            plugin.sendRaw(target, "&a获得了 " + amount + " 张 "
+            plugin.sendPlayerRaw(target, "&a获得了 " + amount + " 张 "
                     + recipe.get().getBlueprint().getDisplayName() + "&a。");
         }
         return true;
@@ -127,37 +127,37 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
 
     private boolean list(CommandSender sender) {
         if (!sender.hasPermission("xyforgecrafting.list")) {
-            plugin.send(sender, "no-permission");
+            plugin.sendLocal(sender, "no-permission");
             return true;
         }
-        plugin.sendRaw(sender, "&6已加载锻造配方 (&f" + plugin.getRecipeRegistry().size() + "&6): &f"
+        plugin.sendLocalRaw(sender, "&6已加载锻造配方 (&f" + plugin.getRecipeRegistry().size() + "&6): &f"
                 + String.join(", ", plugin.getRecipeRegistry().getIds()));
         return true;
     }
 
     private boolean reload(CommandSender sender) {
         if (!sender.hasPermission("xyforgecrafting.reload")) {
-            plugin.send(sender, "no-permission");
+            plugin.sendLocal(sender, "no-permission");
             return true;
         }
-        plugin.send(sender, plugin.reloadAll() ? "reload-success" : "reload-failed");
+        plugin.sendLocal(sender, plugin.reloadAll() ? "reload-success" : "reload-failed");
         return true;
     }
 
     private void help(CommandSender sender) {
-        plugin.sendRaw(sender, "&6=== XyForgeCrafting " + plugin.getDescription().getVersion() + " ===");
-        plugin.sendRaw(sender, "&e/xyfc open &7- 打开锻造台");
+        plugin.sendLocalRaw(sender, "&6=== XyForgeCrafting " + plugin.getDescription().getVersion() + " ===");
+        plugin.sendLocalRaw(sender, "&e/xyfc open &7- 打开锻造台");
         if (sender instanceof Player && sender.hasPermission("xyforgecrafting.get")) {
-            plugin.sendRaw(sender, "&e/xyfc get <配方ID> [数量] &7- 获得锻造图纸");
+            plugin.sendLocalRaw(sender, "&e/xyfc get <配方ID> [数量] &7- 获得锻造图纸");
         }
         if (sender.hasPermission("xyforgecrafting.list")) {
-            plugin.sendRaw(sender, "&e/xyfc list &7- 查看配方");
+            plugin.sendLocalRaw(sender, "&e/xyfc list &7- 查看配方");
         }
         if (sender.hasPermission("xyforgecrafting.give")) {
-            plugin.sendRaw(sender, "&e/xyfc give <玩家> <配方ID> [数量] &7- 给予锻造图纸");
+            plugin.sendLocalRaw(sender, "&e/xyfc give <玩家> <配方ID> [数量] &7- 给予锻造图纸");
         }
         if (sender.hasPermission("xyforgecrafting.reload")) {
-            plugin.sendRaw(sender, "&e/xyfc reload &7- 安全重载");
+            plugin.sendLocalRaw(sender, "&e/xyfc reload &7- 安全重载");
         }
     }
 

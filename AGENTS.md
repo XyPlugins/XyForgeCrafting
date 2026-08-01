@@ -20,7 +20,9 @@
 - 任何事务异常必须退款并保留图纸；成功交付不配置为可省略动作。
 - 关闭、掉线、重载、停服必须归还图纸；背包满进入pending-returns.yml。
 - 配置重载必须先全量校验，新配置失败时保留当前快照。
-- 玩家聊天提示必须使用 `XyCore.get().getMessagePrefix()`；`config.yml -> messages.prefix` 只作为旧配置兼容说明保留。
+- 玩家玩法提示必须使用 `XyCore.get().getMessagePrefix()`，例如非图纸拒绝、材料/金币不足、锻造成功、锻造失败和待领取退回。
+- 管理/排错提示必须保留XyForgeCrafting自己的前缀，例如 `/xyfc help/list/reload/get/give` 的用法、权限不足、配方不存在、数量错误和管理员反馈。
+- `config.yml -> messages.prefix` 作为本地管理前缀和旧配置兼容说明保留。
 - 控制台日志、启动日志和配置错误仍使用XyForgeCrafting自己的日志名，不走统一玩家前缀。
 
 交付前同步更新README、CHANGELOG、AI_USAGE和版本号，并完成四插件联合构建与JAR内容复核。
