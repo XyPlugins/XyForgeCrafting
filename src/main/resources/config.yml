@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.4
+# XyForgeCrafting 1.0.5
 # 仅支持 Paper/Spigot 1.12.2 与 Java 8，不使用 DragonCore GUI。
 # type 对应功能完整说明
 # BACKGROUND：锁定的背景装饰槽，同时作为火焰动画的移动路径。
@@ -82,10 +82,23 @@ gui:
 
 animation:
   enabled: true
+  # 三套内置轻量动画路径：
+  # BORDER_CONVERGE：两路沿GUI边框推进，最后汇合到右下角。
+  # BOTTOM_SWEEP：仅底部边框从左向右推进。
+  # DOUBLE_SWEEP：顶部和底部边框同时从左向右推进。
+  active-preset: BORDER_CONVERGE
   interval-ticks: 1
   loops: 1
-  material: FIREBALL
-  name: '&6锻造之火'
+  # 当前帧头部，默认亮绿色玻璃。
+  head:
+    material: STAINED_GLASS_PANE
+    data: 5
+    name: '&a锻造之火'
+  # 已经走过的路径，默认深绿色玻璃。
+  trail:
+    material: STAINED_GLASS_PANE
+    data: 13
+    name: '&2锻造余焰'
 
 # 锻造成功后写入成品末尾的锻造记录；旧配置缺少本段时也会使用这些默认值。
 forge-record:

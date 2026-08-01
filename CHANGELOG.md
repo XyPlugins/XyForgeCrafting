@@ -1,5 +1,16 @@
 # XyForgeCrafting 更新说明
 
+## 1.0.5 - 2026-08-01
+
+- 新增重构后的配方短格式：`blueprint.material/name`、`money`、`failure.*`、`success-commands`。
+- 继续兼容旧配置字段：`blueprint.template/display-name`、`economy.amount`、`outcomes.*` 仍可读取。
+- `blueprint.material` 和 `requirements` 中不写provider前缀时默认按 `minecraft:` 处理，方便原版材料配置。
+- 默认 `ForgeRecipe/Example.yml` 改为短格式，并统一使用 `##` 中文注释。
+- 新增三套内置轻量动画路径：`BORDER_CONVERGE`、`BOTTOM_SWEEP`、`DOUBLE_SWEEP`。
+- 动画从旧的单个火焰跳动改为绿色玻璃轨迹：当前帧为亮绿，走过路径为深绿，结束后恢复背景。
+- 动画只操作 `BACKGROUND` 槽位，并在配置加载阶段预计算路径，运行时每tick只更新少量槽位。
+- 新增默认配置、短配方、三套动画预设回归测试。
+
 ## 1.0.4 - 2026-07-30
 
 - `FORGE_PROBABILITY` 改为在单个物品Lore中汇总失败和全部非零结果的最终概率。

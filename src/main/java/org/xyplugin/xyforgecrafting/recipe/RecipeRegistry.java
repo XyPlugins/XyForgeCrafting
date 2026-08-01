@@ -54,23 +54,32 @@ public final class RecipeRegistry {
         String name = section.getString("name", "&f" + id);
 
         ConfigurationSection blueprint = requiredSection(section, "blueprint");
-        String template = itemId(blueprint.getString("template", ""), "blueprint.template");
-        String displayName = blueprint.getString("display-name", "&f" + id + "锻造图");
+        String template = itemId(blueprint.getString("material", blueprint.getString("template", "")),
+                "blueprint.material", "minecraft");
+        String displayName = blueprint.getString("name", blueprint.getString("display-name", "&f" + id + "锻造图"));
         List<String> blueprintLore = new ArrayList<String>(blueprint.getStringList("lore"));
 
-        ConfigurationSection result = requiredSection(section, "result");
-        String resultItem = itemId(result.getString("item", ""), "result.item");
+        ConfigurationSection result = section.getConfigurationSection("result");
+        String resultItem;
+        int resultAmount;
+        if (result == null && section.isString("result")) {
+            resultItem = itemId(section.getString("result", ""), "result", "xyitems");
+            resultAmount = 1;
+        } else {
+            if (result == null) throw new IllegalArgumentException("缺少 result 节点。");
+            resultItem = itemId(result.getString("item", ""), "result.item", null);
+            resultAmount = result.getInt("amount", 1);
+        }
         if (!resultItem.toLowerCase(Locale.ROOT).startsWith("xyitems:")) {
             throw new IllegalArgumentException("result.item当前只支持xyitems:完整ID。");
         }
-        int resultAmount = result.getInt("amount", 1);
         if (resultAmount <= 0 || resultAmount > 64) throw new IllegalArgumentException("result.amount必须在1到64之间。");
 
         Map<String, Long> requirements = new LinkedHashMap<String, Long>();
         ConfigurationSection requirementSection = section.getConfigurationSection("requirements");
         if (requirementSection != null) {
             for (String key : requirementSection.getKeys(false)) {
-                String fullId = itemId(key, "requirements物品ID");
+                String fullId = itemId(key, "requirements物品ID", "minecraft");
                 long amount = requirementSection.getLong(key, 0L);
                 if (amount <= 0L) throw new IllegalArgumentException("材料 " + key + " 的数量必须大于0。");
                 requirements.put(fullId, amount);
@@ -79,23 +88,36 @@ public final class RecipeRegistry {
 
         ConfigurationSection economySection = section.getConfigurationSection("economy");
         String economyType = economySection == null ? "VAULT" : economySection.getString("type", "VAULT").trim().toUpperCase(Locale.ROOT);
-        double economyAmount = economySection == null ? 0D : economySection.getDouble("amount", 0D);
+        double economyAmount = section.contains("money") ? section.getDouble("money", 0D)
+                : economySection == null ? 0D : economySection.getDouble("amount", 0D);
         if (!"VAULT".equals(economyType)) throw new IllegalArgumentException("economy.type当前只支持VAULT。");
         if (Double.isNaN(economyAmount) || Double.isInfinite(economyAmount) || economyAmount < 0D) {
-            throw new IllegalArgumentException("economy.amount不能小于0。");
+            throw new IllegalArgumentException("money不能小于0。");
         }
 
-        List<String> commands = section.getStringList("outcomes.success.commands");
-        String policyText = section.getString("outcomes.failure.blueprint", "DESTROY").trim().toUpperCase(Locale.ROOT);
+        List<String> commands = section.isList("success-commands")
+                ? section.getStringList("success-commands")
+                : section.getStringList("outcomes.success.commands");
+        ConfigurationSection compactFailure = section.getConfigurationSection("failure");
+        String policyText = compactFailure == null
+                ? section.getString("outcomes.failure.blueprint", "DESTROY")
+                : compactFailure.getString("blueprint", section.getString("outcomes.failure.blueprint", "DESTROY"));
+        policyText = policyText.trim().toUpperCase(Locale.ROOT);
         RecipeDefinition.Failure.BlueprintPolicy policy;
         try {
             policy = RecipeDefinition.Failure.BlueprintPolicy.valueOf(policyText);
         } catch (IllegalArgumentException failure) {
-            throw new IllegalArgumentException("outcomes.failure.blueprint只能是DESTROY或RETURN。");
+            throw new IllegalArgumentException("failure.blueprint只能是DESTROY或RETURN。");
         }
-        int materialRefund = percent(section.getInt("outcomes.failure.refund.materials-percent", 0), "materials-percent");
-        int moneyRefund = percent(section.getInt("outcomes.failure.refund.money-percent", 0), "money-percent");
-        String failureMessage = section.getString("outcomes.failure.message", "&c锻造失败。");
+        int materialRefund = compactFailure != null && compactFailure.contains("refund-materials")
+                ? percent(compactFailure.getInt("refund-materials", 0), "refund-materials")
+                : percent(section.getInt("outcomes.failure.refund.materials-percent", 0), "materials-percent");
+        int moneyRefund = compactFailure != null && compactFailure.contains("refund-money")
+                ? percent(compactFailure.getInt("refund-money", 0), "refund-money")
+                : percent(section.getInt("outcomes.failure.refund.money-percent", 0), "money-percent");
+        String failureMessage = compactFailure == null
+                ? section.getString("outcomes.failure.message", "&c锻造失败。")
+                : compactFailure.getString("message", section.getString("outcomes.failure.message", "&c锻造失败。"));
         return new RecipeDefinition(id, name,
                 new RecipeDefinition.Blueprint(template, displayName, blueprintLore),
                 new RecipeDefinition.Result(resultItem, resultAmount), requirements,
@@ -114,9 +136,13 @@ public final class RecipeRegistry {
         return section;
     }
 
-    private static String itemId(String raw, String field) {
+    private static String itemId(String raw, String field, String defaultProvider) {
         String value = raw == null ? "" : raw.trim();
         int separator = value.indexOf(':');
+        if (separator < 0 && defaultProvider != null && !defaultProvider.trim().isEmpty()) {
+            value = defaultProvider.trim().toLowerCase(Locale.ROOT) + ":" + value;
+            separator = value.indexOf(':');
+        }
         if (separator <= 0 || separator >= value.length() - 1) throw new IllegalArgumentException(field + "必须使用provider:item完整ID。");
         return value;
     }

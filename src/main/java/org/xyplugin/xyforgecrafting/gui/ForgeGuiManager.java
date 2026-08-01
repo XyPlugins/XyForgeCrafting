@@ -3,11 +3,14 @@ package org.xyplugin.xyforgecrafting.gui;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -292,35 +295,54 @@ public final class ForgeGuiManager implements Listener {
             finishForge(player, session);
             return;
         }
-        List<Integer> path = plugin.getSettings().getSlots(GuiComponentType.BACKGROUND);
-        if (path.isEmpty()) {
+        List<List<Integer>> frames = plugin.getSettings().getAnimationFrames();
+        if (frames.isEmpty()) {
             finishForge(player, session);
             return;
         }
-        int steps = path.size() * plugin.getSettings().getAnimationLoops();
+        int steps = frames.size() * plugin.getSettings().getAnimationLoops();
         BukkitTask task = new BukkitRunnable() {
             private int index;
-            private int previous = -1;
+            private List<Integer> previousHeads = Collections.emptyList();
+            private final Set<Integer> touched = new LinkedHashSet<Integer>();
 
             @Override
             public void run() {
                 if (sessions.get(player.getUniqueId()) != session || !player.isOnline()) {
+                    session.setAnimationTask(null);
+                    session.setBusy(false);
                     cancel();
                     return;
                 }
-                if (previous >= 0) restoreBaseSlot(session, previous);
                 if (index >= steps) {
+                    restoreAnimationSlots(session, touched);
                     session.setAnimationTask(null);
                     cancel();
                     finishForge(player, session);
                     return;
                 }
-                previous = path.get(index % path.size());
-                session.getInventory().setItem(previous, plugin.getSettings().getAnimationDisplay().create());
+                List<Integer> currentHeads = frames.get(index % frames.size());
+                for (Integer previous : previousHeads) {
+                    if (previous == null || currentHeads.contains(previous)) continue;
+                    session.getInventory().setItem(previous, plugin.getSettings().getAnimationTrailDisplay().create());
+                    touched.add(previous);
+                }
+                for (Integer current : currentHeads) {
+                    if (current == null) continue;
+                    session.getInventory().setItem(current, plugin.getSettings().getAnimationHeadDisplay().create());
+                    touched.add(current);
+                }
+                previousHeads = new ArrayList<Integer>(currentHeads);
                 index++;
             }
         }.runTaskTimer(plugin, 0L, plugin.getSettings().getAnimationInterval());
         session.setAnimationTask(task);
+    }
+
+    private void restoreAnimationSlots(ForgeSession session, Set<Integer> touched) {
+        for (Integer slot : touched) {
+            if (slot != null) restoreBaseSlot(session, slot);
+        }
     }
 
     private void finishForge(Player player, ForgeSession session) {

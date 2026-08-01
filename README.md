@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.4
+# XyForgeCrafting 1.0.5
 
 XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持Java 8与Paper/Spigot 1.12.2**。
 
@@ -11,14 +11,14 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 - Paper 1.12.2 build 1620
 - Java 8
 - XyCore 0.3.10
-- XyItems 1.0.3
+- XyItems 1.0.4
 - XySoulSpace 1.1.1，可选
 - Vault和一个经济插件；配方金币为0时可以不使用经济
 - MythicMobs 4.11，可选；仅在配方引用 `mythicmobs:` 材料时需要
 
 安装顺序：
 
-1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.3.jar` 和 `XyForgeCrafting-1.0.4.jar` 放入 `plugins/`。
+1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.4.jar` 和 `XyForgeCrafting-1.0.5.jar` 放入 `plugins/`。
 2. 需要读取灵魂仓库时同时安装 `XySoulSpace-1.1.1.jar`。
 3. 完整重启服务器，不使用Bukkit `/reload`。
 4. 插件生成 `plugins/XyForgeCrafting/config.yml`、`ForgeRecipe/Example.yml` 和图纸签名密钥。
@@ -30,7 +30,7 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 2. 唯一的图纸槽只接受XyForgeCrafting生成并签名的图纸。
 3. 放入有效图纸后，GUI显示材料拥有量、金币、全部非零最终概率和成品预览。
 4. 材料默认统计 `灵魂仓库 + 主背包36格`，默认优先扣灵魂仓库，再扣背包。
-5. 点击开始后播放原版GUI火焰动画，结束时重新验证并执行事务。
+5. 点击开始后播放原版GUI绿色轨迹动画，结束时重新验证并执行事务。
 6. 成功时XyItems一次决定品质并立即生成随机属性；失败时按图纸配置处理图纸、材料和金币退款。
 
 非图纸物品会被拒绝，并提示“当前放入的不是图纸”。GUI顶层除图纸槽外全部锁定；图纸槽也由插件托管，不允许客户端直接移动展示物品。
@@ -99,6 +99,30 @@ gui:
 
 如果材料种类超过布局提供的 `FORGE_REQUIREMENTS` 槽位，插件会显示已有内容但拒绝开始锻造。概率只需要至少一个 `FORGE_PROBABILITY` 槽位；配置多个时，每个槽位显示相同的完整概率Lore。
 
+动画配置使用三套内置轻量路径，只会修改 `BACKGROUND` 槽位：
+
+```yaml
+animation:
+  enabled: true
+  active-preset: BORDER_CONVERGE
+  interval-ticks: 1
+  loops: 1
+  head:
+    material: STAINED_GLASS_PANE
+    data: 5
+    name: '&a锻造之火'
+  trail:
+    material: STAINED_GLASS_PANE
+    data: 13
+    name: '&2锻造余焰'
+```
+
+`active-preset` 可选：
+
+- `BORDER_CONVERGE`：两路沿边框推进，最后汇合到右下角。
+- `BOTTOM_SWEEP`：底部边框从左向右推进。
+- `DOUBLE_SWEEP`：顶部和底部边框同时从左向右推进。
+
 ## 配方配置
 
 配方目录：
@@ -113,10 +137,9 @@ plugins/XyForgeCrafting/ForgeRecipe/
 recipe:
   enabled: true
   id: 'chumo_zhifeng'
-  name: '&a初墨之锋'
   blueprint:
-    template: 'minecraft:GLOWSTONE_DUST'
-    display-name: '&a初墨之锋锻造图'
+    material: 'minecraft:GLOWSTONE_DUST'
+    name: '&a初墨之锋锻造图'
     lore:
       - '&e这是初墨之锋的锻造图纸。'
       - '&e打开锻造界面后可以使用。'
@@ -127,35 +150,32 @@ recipe:
     'mythicmobs:ForgingCrystal': 1
     'minecraft:IRON_INGOT': 16
     'xyitems:forge_crystal': 8
-  economy:
-    type: VAULT
-    amount: 1000
-  outcomes:
-    success:
-      commands:
-        - 'console:say 玩家 %player_name% 锻造成功了 %result_name_plain%，让我们恭喜他！'
-    failure:
-      blueprint: DESTROY
-      refund:
-        materials-percent: 50
-        money-percent: 0
-      message: '&c锻造失败，返还了部分材料。'
+  money: 1000
+  failure:
+    blueprint: DESTROY
+    refund-materials: 50
+    refund-money: 0
+    message: '&c锻造失败，返还了部分材料。'
+  success-commands:
+    - 'console:say 玩家 %player_name% 锻造成功了 %result_name_plain%，让我们恭喜他！'
 ```
 
 字段说明：
 
 - `id`：配方唯一ID，也写入图纸隐藏身份。发布后不要随意修改。
-- `name`：配方在提示和管理界面使用的显示名称。
-- `blueprint.template`：生成图纸时的基础物品完整ID，只决定材质和基础NBT。
-- `blueprint.display-name/lore`：图纸玩家可见外观，不参与真伪判断。
+- `blueprint.material`：生成图纸时的基础物品完整ID；不写前缀时默认按 `minecraft:` 处理。
+- `blueprint.name/lore`：图纸玩家可见外观，不参与真伪判断。
 - `result.item`：当前固定使用 `xyitems:<成品ID>`。
+- `result.amount`：成功后交付数量，建议明确写出。
 - `requirements`：完整物品库ID到数量的简单映射，无需重复配置来源和扣除顺序。
-- `economy.type`：当前版本只支持 `VAULT`；`amount: 0` 表示不收费。
-- `outcomes.success.commands`：成功交付成品后执行，可用 `console:` 或 `player:` 前缀。
-- `outcomes.failure.blueprint`：`DESTROY`销毁图纸，`RETURN`保留图纸。
+- `money`：当前默认使用 `VAULT`；`0` 表示不收费。
+- `success-commands`：成功交付成品后执行，可用 `console:` 或 `player:` 前缀。
+- `failure.blueprint`：`DESTROY`销毁图纸，`RETURN`保留图纸。
 - 退款百分比必须为0到100，物品按实际扣除记录向下取整返还。
 
-成功交付成品是插件固定核心流程，不需要配置 `DELIVER_RESULT`。成功图纸固定消耗；失败图纸按照 `outcomes.failure.blueprint` 处理。
+成功交付成品是插件固定核心流程，不需要配置 `DELIVER_RESULT`。成功图纸固定消耗；失败图纸按照 `failure.blueprint` 处理。
+
+旧配置中的 `blueprint.template/display-name`、`economy.amount` 与 `outcomes.*` 仍然兼容，但默认示例和后续文档推荐使用短格式。
 
 命令占位符：
 
@@ -286,7 +306,7 @@ XyForgeCrafting也注册到XyCore重载管理器，可由 `/xycore reload` 调�
 输出：
 
 ```text
-build/libs/XyForgeCrafting-1.0.4.jar
+build/libs/XyForgeCrafting-1.0.5.jar
 ```
 
 编译目标固定为Java 8，仓库内附Paper 1.12.2编译期API。最终JAR不会打入Paper、XyCore或XyItems类。

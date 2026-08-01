@@ -112,7 +112,7 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
             itemApi.getClass().getMethod("deliverItems", Player.class, java.util.List.class);
             return true;
         } catch (Throwable failure) {
-            getLogger().severe("依赖API版本不兼容。需要XyCore 0.3.10和XyItems 1.0.3: " + failure.getMessage());
+            getLogger().severe("依赖API版本不兼容。需要XyCore 0.3.10和XyItems 1.0.4: " + failure.getMessage());
             return false;
         }
     }

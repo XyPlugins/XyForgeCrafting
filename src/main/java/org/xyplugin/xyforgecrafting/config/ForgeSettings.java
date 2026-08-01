@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -22,13 +23,18 @@ public final class ForgeSettings {
     private final boolean animationEnabled;
     private final int animationInterval;
     private final int animationLoops;
-    private final DisplayItemSpec animationDisplay;
+    private final String animationPreset;
+    private final List<List<Integer>> animationFrames;
+    private final DisplayItemSpec animationHeadDisplay;
+    private final DisplayItemSpec animationTrailDisplay;
     private final ForgeRecordSettings forgeRecord;
 
     private ForgeSettings(String title, List<String> layout, Map<Character, GuiComponent> components,
                           Map<GuiComponentType, List<Integer>> slots, Map<String, String> messages,
                           boolean animationEnabled, int animationInterval, int animationLoops,
-                          DisplayItemSpec animationDisplay, ForgeRecordSettings forgeRecord) {
+                          String animationPreset, List<List<Integer>> animationFrames,
+                          DisplayItemSpec animationHeadDisplay, DisplayItemSpec animationTrailDisplay,
+                          ForgeRecordSettings forgeRecord) {
         this.title = title;
         this.layout = Collections.unmodifiableList(new ArrayList<String>(layout));
         this.components = Collections.unmodifiableMap(new LinkedHashMap<Character, GuiComponent>(components));
@@ -41,7 +47,14 @@ public final class ForgeSettings {
         this.animationEnabled = animationEnabled;
         this.animationInterval = animationInterval;
         this.animationLoops = animationLoops;
-        this.animationDisplay = animationDisplay;
+        this.animationPreset = animationPreset;
+        List<List<Integer>> copiedFrames = new ArrayList<List<Integer>>();
+        for (List<Integer> frame : animationFrames) {
+            copiedFrames.add(Collections.unmodifiableList(new ArrayList<Integer>(frame)));
+        }
+        this.animationFrames = Collections.unmodifiableList(copiedFrames);
+        this.animationHeadDisplay = animationHeadDisplay;
+        this.animationTrailDisplay = animationTrailDisplay;
         this.forgeRecord = forgeRecord;
     }
 
@@ -114,10 +127,14 @@ public final class ForgeSettings {
         boolean animationEnabled = animation == null || animation.getBoolean("enabled", true);
         int interval = animation == null ? 1 : Math.max(1, Math.min(200, animation.getInt("interval-ticks", 1)));
         int loops = animation == null ? 1 : Math.max(1, Math.min(10, animation.getInt("loops", 1)));
-        Material animationMaterial = material(animation == null ? "FIREBALL" : animation.getString("material", "FIREBALL"));
-        String animationName = animation == null ? "&6锻造之火" : animation.getString("name", "&6锻造之火");
-        DisplayItemSpec animationDisplay = new DisplayItemSpec(animationMaterial, (short) 0, animationName,
-                Collections.<String>emptyList());
+        String animationPreset = animation == null ? "BORDER_CONVERGE"
+                : animation.getString("active-preset", "BORDER_CONVERGE").trim().toUpperCase(Locale.ROOT);
+        List<List<Integer>> animationFrames = buildAnimationFrames(animationPreset, layout.size() * 9,
+                slots.get(GuiComponentType.BACKGROUND));
+        DisplayItemSpec animationHead = parseAnimationDisplay(animation, "head", "STAINED_GLASS_PANE", 5,
+                "&a锻造之火");
+        DisplayItemSpec animationTrail = parseAnimationDisplay(animation, "trail", "STAINED_GLASS_PANE", 13,
+                "&2锻造余焰");
 
         ConfigurationSection record = yaml.getConfigurationSection("forge-record");
         boolean recordEnabled = record == null || record.getBoolean("enabled", true);
@@ -131,7 +148,7 @@ public final class ForgeSettings {
         ForgeRecordSettings forgeRecord = new ForgeRecordSettings(recordEnabled, recordTimezone,
                 recordTimeFormat, replaceLastSeparator, recordLore);
         return new ForgeSettings(title, layout, components, slots, messages, animationEnabled, interval, loops,
-                animationDisplay, forgeRecord);
+                animationPreset, animationFrames, animationHead, animationTrail, forgeRecord);
     }
 
     private static DisplayItemSpec parseDisplay(ConfigurationSection section, String owner) {
@@ -151,6 +168,104 @@ public final class ForgeSettings {
         return material;
     }
 
+    private static DisplayItemSpec parseAnimationDisplay(ConfigurationSection animation, String child,
+                                                         String defaultMaterial, int defaultData,
+                                                         String defaultName) {
+        if (animation != null && animation.isConfigurationSection(child)) {
+            return parseDisplay(animation.getConfigurationSection(child), "animation." + child);
+        }
+        String materialName;
+        int data;
+        String name;
+        if (animation != null && animation.contains("material") && "head".equals(child)) {
+            materialName = animation.getString("material", defaultMaterial);
+            data = animation.getInt("data", defaultData);
+            name = animation.getString("name", defaultName);
+        } else {
+            materialName = defaultMaterial;
+            data = defaultData;
+            name = defaultName;
+        }
+        if (data < Short.MIN_VALUE || data > Short.MAX_VALUE) throw new IllegalArgumentException("animation." + child + " data超出范围。");
+        return new DisplayItemSpec(material(materialName), (short) data, name, Collections.<String>emptyList());
+    }
+
+    private static List<List<Integer>> buildAnimationFrames(String preset, int size, List<Integer> backgroundSlots) {
+        if (backgroundSlots == null || backgroundSlots.isEmpty()) return Collections.emptyList();
+        boolean[] background = new boolean[size];
+        for (Integer slot : backgroundSlots) {
+            if (slot != null && slot >= 0 && slot < size) background[slot] = true;
+        }
+
+        List<List<Integer>> frames;
+        if ("BORDER_CONVERGE".equals(preset)) {
+            frames = borderConverge(size, background);
+        } else if ("BOTTOM_SWEEP".equals(preset)) {
+            frames = bottomSweep(size, background);
+        } else if ("DOUBLE_SWEEP".equals(preset)) {
+            frames = doubleSweep(size, background);
+        } else {
+            throw new IllegalArgumentException("animation.active-preset 只能是 BORDER_CONVERGE、BOTTOM_SWEEP 或 DOUBLE_SWEEP。");
+        }
+        if (frames.isEmpty()) {
+            throw new IllegalArgumentException("animation.active-preset 当前布局没有可用的BACKGROUND路径。");
+        }
+        return frames;
+    }
+
+    private static List<List<Integer>> borderConverge(int size, boolean[] background) {
+        int rows = size / 9;
+        List<Integer> topThenRight = new ArrayList<Integer>();
+        for (int column = 0; column < 9; column++) addIfBackground(topThenRight, column, background);
+        for (int row = 1; row < rows; row++) addIfBackground(topThenRight, row * 9 + 8, background);
+
+        List<Integer> leftThenBottom = new ArrayList<Integer>();
+        for (int row = 0; row < rows; row++) addIfBackground(leftThenBottom, row * 9, background);
+        for (int column = 1; column < 9; column++) addIfBackground(leftThenBottom, (rows - 1) * 9 + column, background);
+        return combineFrames(topThenRight, leftThenBottom);
+    }
+
+    private static List<List<Integer>> bottomSweep(int size, boolean[] background) {
+        int rows = size / 9;
+        List<List<Integer>> frames = new ArrayList<List<Integer>>();
+        for (int column = 0; column < 9; column++) {
+            int slot = (rows - 1) * 9 + column;
+            if (slot >= 0 && slot < background.length && background[slot]) frames.add(Collections.singletonList(slot));
+        }
+        return frames;
+    }
+
+    private static List<List<Integer>> doubleSweep(int size, boolean[] background) {
+        int rows = size / 9;
+        List<List<Integer>> frames = new ArrayList<List<Integer>>();
+        int bottomRow = rows - 1;
+        for (int column = 0; column < 9; column++) {
+            List<Integer> frame = new ArrayList<Integer>();
+            int top = column;
+            int bottom = bottomRow * 9 + column;
+            if (top >= 0 && top < background.length && background[top]) frame.add(top);
+            if (bottom != top && bottom >= 0 && bottom < background.length && background[bottom]) frame.add(bottom);
+            if (!frame.isEmpty()) frames.add(frame);
+        }
+        return frames;
+    }
+
+    private static List<List<Integer>> combineFrames(List<Integer> first, List<Integer> second) {
+        List<List<Integer>> frames = new ArrayList<List<Integer>>();
+        int steps = Math.max(first.size(), second.size());
+        for (int index = 0; index < steps; index++) {
+            List<Integer> frame = new ArrayList<Integer>();
+            if (index < first.size()) frame.add(first.get(index));
+            if (index < second.size() && !frame.contains(second.get(index))) frame.add(second.get(index));
+            if (!frame.isEmpty()) frames.add(frame);
+        }
+        return frames;
+    }
+
+    private static void addIfBackground(List<Integer> slots, int slot, boolean[] background) {
+        if (slot >= 0 && slot < background.length && background[slot]) slots.add(slot);
+    }
+
     public String getTitle() { return Text.color(title); }
     public int getSize() { return layout.size() * 9; }
     public List<String> getLayout() { return layout; }
@@ -160,7 +275,11 @@ public final class ForgeSettings {
     public boolean isAnimationEnabled() { return animationEnabled; }
     public int getAnimationInterval() { return animationInterval; }
     public int getAnimationLoops() { return animationLoops; }
-    public DisplayItemSpec getAnimationDisplay() { return animationDisplay; }
+    public String getAnimationPreset() { return animationPreset; }
+    public List<List<Integer>> getAnimationFrames() { return animationFrames; }
+    public DisplayItemSpec getAnimationDisplay() { return animationHeadDisplay; }
+    public DisplayItemSpec getAnimationHeadDisplay() { return animationHeadDisplay; }
+    public DisplayItemSpec getAnimationTrailDisplay() { return animationTrailDisplay; }
     public ForgeRecordSettings getForgeRecord() { return forgeRecord; }
 
     public String message(String key) {

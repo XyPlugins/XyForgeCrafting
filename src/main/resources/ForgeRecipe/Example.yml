@@ -1,44 +1,60 @@
-# XyForgeCrafting 示例配方
-# 首次启动后生成到：plugins/XyForgeCrafting/ForgeRecipe/Example.yml
+## XyForgeCrafting 示例配方
+## 首次启动后生成到：plugins/XyForgeCrafting/ForgeRecipe/Example.yml
+## 这是重构后的推荐短格式：图纸只写外观、材料、成品、金币和失败规则。
 
 recipe:
-  # 配方是否启用
+  ## 配方是否启用。默认就是 true，写出来是为了示例更清楚。
   enabled: true
-  # 配方内部唯一ID，发布后尽量不要修改
+
+  ## 配方内部唯一ID，会写入图纸隐藏NBT。正式发放后不要随意修改。
   id: 'example_forge_soul'
-  # 配方显示名称
-  name: '&a示例墨魂'
 
-  # 图纸设置；隐藏身份和签名由插件自动写入，不需要配置。
   blueprint:
-    template: 'minecraft:GLOWSTONE_DUST'
-    display-name: '&a示例墨魂锻造图'
-    lore:
-      - '&e这是示例墨魂的锻造图纸。'
-      - '&e放入锻造台后显示材料与最终概率。'
+    ## 图纸基础物品。可以写 minecraft:GLOWSTONE_DUST，也可以写 GLOWSTONE_DUST。
+    ## 不写前缀时默认当作 minecraft: 原版物品。
+    material: 'minecraft:GLOWSTONE_DUST'
 
-  # 成功后由XyItems立即生成已经确定品质和属性的成品。
+    ## 图纸显示名称，只影响玩家看到的文字，不参与真伪判断。
+    name: '&a示例墨魂锻造图'
+
+    ## 图纸显示说明。隐藏身份和签名由插件自动写入，不需要配置。
+    lore:
+      - '&7类型: &f图纸'
+      - '&7品质: &f示例'
+      - '&7------------[ &f信息&7 ]--------------'
+      - '&7来源: &f系统示例'
+      - '&7需要材料：'
+      - '&f铁锭 &7x16'
+      - '&f锻造结晶 &7x1'
+      - '&7----------------------------------'
+
   result:
+    ## 锻造成品，必须引用 XyItems 中存在且带 forge.failure/identify.qualities 的物品。
     item: 'xyitems:example_forge_soul'
+    ## 成功后交付数量。数量仍然建议明确写出。
     amount: 1
 
-  # 默认统计灵魂仓库和背包，默认优先扣灵魂仓库，再扣背包。
+  ## 锻造材料。默认统计主背包和灵魂仓库，默认优先扣灵魂仓库。
   requirements:
+    ## 原版铁锭16个。
     'minecraft:IRON_INGOT': 16
+    ## XyItems锻造结晶1个。
     'xyitems:example_forge_crystal': 1
 
-  economy:
-    type: VAULT
-    amount: 1000
+  ## 金币需求。默认使用 Vault；0 表示不收金币。
+  money: 1000
 
-  outcomes:
-    success:
-      commands:
-        - 'console:say 玩家 %player_name% 锻造成功了 %result_name_plain%，让我们恭喜他！'
-    failure:
-      # DESTROY销毁图纸，RETURN退还图纸。
-      blueprint: DESTROY
-      refund:
-        materials-percent: 50
-        money-percent: 0
-      message: '&c锻造失败，返还了部分材料。'
+  ## 锻造失败后的处理。
+  failure:
+    ## DESTROY：失败销毁图纸；RETURN：失败退还图纸。
+    blueprint: DESTROY
+    ## 失败返还材料百分比，0到100。
+    refund-materials: 50
+    ## 失败返还金币百分比，0到100。
+    refund-money: 0
+    ## 失败提示。
+    message: '&c锻造失败，返还了部分材料。'
+
+  ## 锻造成功并交付成品后执行的命令。
+  success-commands:
+    - 'console:say 玩家 %player_name% 锻造成功了 %result_name_plain%，让我们恭喜他！'

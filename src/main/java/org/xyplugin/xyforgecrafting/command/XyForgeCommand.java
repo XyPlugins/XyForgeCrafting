@@ -104,7 +104,7 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
         }
         Optional<ItemStack> blueprint = plugin.getBlueprints().create(recipe.get(), 1);
         if (!blueprint.isPresent()) {
-            sender.sendMessage(Text.color("&c图纸基础物品无法生成，请检查blueprint.template。"));
+            sender.sendMessage(Text.color("&c图纸基础物品无法生成，请检查blueprint.material。"));
             return true;
         }
         int remaining = amount;
