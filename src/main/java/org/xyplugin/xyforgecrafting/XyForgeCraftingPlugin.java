@@ -46,7 +46,7 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
         try {
             blueprints = new BlueprintService(this);
         } catch (Exception failure) {
-            getLogger().severe("图纸签名服务启动失败: " + failure.getMessage());
+            getLogger().severe("图纸身份服务启动失败: " + failure.getMessage());
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }

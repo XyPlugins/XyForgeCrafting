@@ -1,5 +1,5 @@
 name: XyForgeCrafting
-version: '1.0.5'
+version: '1.0.6'
 main: org.xyplugin.xyforgecrafting.XyForgeCraftingPlugin
 api-version: '1.12'
 author: XyPlugins
@@ -18,10 +18,10 @@ permissions:
     description: Allows opening and using the forge.
     default: true
   xyforgecrafting.give:
-    description: Allows giving signed forge blueprints.
+    description: Allows giving forge blueprints.
     default: op
   xyforgecrafting.get:
-    description: Allows players to obtain signed forge blueprints for themselves.
+    description: Allows players to obtain forge blueprints for themselves.
     default: op
   xyforgecrafting.list:
     description: Allows listing loaded recipes.

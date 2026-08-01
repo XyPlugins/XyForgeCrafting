@@ -12,7 +12,7 @@
 
 核心安全约定：
 
-- 图纸真伪只使用XyCore NBT签名，不按名称和Lore判断。
+- 图纸真伪只使用XyCore固定隐藏NBT身份，不按名称和Lore判断，也不再依赖本地签名密钥。
 - 顶层GUI只有图纸槽代表真实输入，服务端ForgeSession是最终状态来源。
 - 所有物品匹配必须调用XyCore `ItemLibraryService#matches`。
 - 灵魂仓库必须使用XySoulSpace原子批量接口，禁止直接读取玩家YML。

@@ -149,13 +149,13 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Text.color("&6=== XyForgeCrafting " + plugin.getDescription().getVersion() + " ==="));
         sender.sendMessage(Text.color("&e/xyfc open &7- 打开锻造台"));
         if (sender instanceof Player && sender.hasPermission("xyforgecrafting.get")) {
-            sender.sendMessage(Text.color("&e/xyfc get <配方ID> [数量] &7- 获得签名图纸"));
+            sender.sendMessage(Text.color("&e/xyfc get <配方ID> [数量] &7- 获得锻造图纸"));
         }
         if (sender.hasPermission("xyforgecrafting.list")) {
             sender.sendMessage(Text.color("&e/xyfc list &7- 查看配方"));
         }
         if (sender.hasPermission("xyforgecrafting.give")) {
-            sender.sendMessage(Text.color("&e/xyfc give <玩家> <配方ID> [数量] &7- 给予签名图纸"));
+            sender.sendMessage(Text.color("&e/xyfc give <玩家> <配方ID> [数量] &7- 给予锻造图纸"));
         }
         if (sender.hasPermission("xyforgecrafting.reload")) {
             sender.sendMessage(Text.color("&e/xyfc reload &7- 安全重载"));

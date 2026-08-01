@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.5
+# XyForgeCrafting 1.0.6
 
 XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持Java 8与Paper/Spigot 1.12.2**。
 
@@ -18,16 +18,16 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 
 安装顺序：
 
-1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.4.jar` 和 `XyForgeCrafting-1.0.5.jar` 放入 `plugins/`。
+1. 将 `XyCore-0.3.10.jar`、`XyItems-1.0.4.jar` 和 `XyForgeCrafting-1.0.6.jar` 放入 `plugins/`。
 2. 需要读取灵魂仓库时同时安装 `XySoulSpace-1.1.1.jar`。
 3. 完整重启服务器，不使用Bukkit `/reload`。
-4. 插件生成 `plugins/XyForgeCrafting/config.yml`、`ForgeRecipe/Example.yml` 和图纸签名密钥。
+4. 插件生成 `plugins/XyForgeCrafting/config.yml` 和 `ForgeRecipe/Example.yml`。
 5. 先确认XyItems成品ID与材料ID存在，再使用 `/xyfc reload`。
 
 ## 玩家流程
 
 1. 玩家输入 `/xyfc open` 打开锻造台。
-2. 唯一的图纸槽只接受XyForgeCrafting生成并签名的图纸。
+2. 唯一的图纸槽只接受XyForgeCrafting生成并写入固定隐藏NBT身份的图纸。
 3. 放入有效图纸后，GUI显示材料拥有量、金币、全部非零最终概率和成品预览。
 4. 材料默认统计 `灵魂仓库 + 主背包36格`，默认优先扣灵魂仓库，再扣背包。
 5. 点击开始后播放原版GUI绿色轨迹动画，结束时重新验证并执行事务。
@@ -40,15 +40,15 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 | 命令 | 说明 | 权限 |
 | --- | --- | --- |
 | `/xyfc open` | 打开锻造台 | `xyforgecrafting.use` |
-| `/xyfc get <配方ID> [数量]` | 玩家为自己取得签名图纸，数量默认1、最大64 | `xyforgecrafting.get` |
-| `/xyfc give <玩家> <配方ID> [数量]` | 给予指定在线玩家签名图纸 | `xyforgecrafting.give` |
+| `/xyfc get <配方ID> [数量]` | 玩家为自己取得锻造图纸，数量默认1、最大64 | `xyforgecrafting.get` |
+| `/xyfc give <玩家> <配方ID> [数量]` | 给予指定在线玩家锻造图纸 | `xyforgecrafting.give` |
 | `/xyfc list` | 查看已加载配方ID | `xyforgecrafting.list` |
 | `/xyfc reload` | 全量校验后安全重载 | `xyforgecrafting.reload` |
 | `/xyfc help` | 查看帮助 | 无 |
 
 主命令别名为 `/xyforge` 和 `/xyforgecrafting`。
 
-`xyforgecrafting.get` 默认只授予OP，避免普通玩家随意生成图纸；如需提供给管理组或测试组，请通过权限插件单独授权。`get` 与 `give` 都根据配方ID生成带当前服务器HMAC签名的真实图纸，不能用普通物品名称伪造。
+`xyforgecrafting.get` 默认只授予OP，避免普通玩家随意生成图纸；如需提供给管理组或测试组，请通过权限插件单独授权。`get` 与 `give` 都根据配方ID生成带固定隐藏NBT身份的真实图纸，不能用普通物品名称或Lore伪造。
 
 ## GUI配置
 
@@ -245,12 +245,13 @@ forge-record:
 ```text
 xyforge-blueprint-id
 xyforge-blueprint-schema
-xyforge-blueprint-signature
 ```
 
-签名使用服务器本地 `plugins/XyForgeCrafting/blueprint-secret.key`。请备份这个文件；丢失或替换密钥后，旧图纸会因签名不一致而失效。名称和Lore可随配置修改，不会让旧图纸失效。
+插件只检查隐藏的配方ID与schema版本，不检查图纸可见名称和Lore。服务器已经禁止铁砧改名时，这种固定NBT身份足够轻量，也不会因为 `blueprint-secret.key` 丢失或重装插件导致旧图纸失效。
 
-不要手动编辑或共享不同服务器的签名密钥。`version`、`validation`、`gui.display-source` 等实现字段不需要写进配方。
+从1.0.6开始，插件不会生成或依赖 `plugins/XyForgeCrafting/blueprint-secret.key`。1.0.5及更早图纸上可能残留 `xyforge-blueprint-signature`，新版会直接忽略该旧字段；只要 `xyforge-blueprint-id` 与 `xyforge-blueprint-schema` 正确且对应配方仍启用，旧图纸仍可继续使用。
+
+`version`、`validation`、`gui.display-source` 等实现字段不需要写进配方。
 
 ## 材料匹配与事务
 
@@ -306,7 +307,7 @@ XyForgeCrafting也注册到XyCore重载管理器，可由 `/xycore reload` 调�
 输出：
 
 ```text
-build/libs/XyForgeCrafting-1.0.5.jar
+build/libs/XyForgeCrafting-1.0.6.jar
 ```
 
 编译目标固定为Java 8，仓库内附Paper 1.12.2编译期API。最终JAR不会打入Paper、XyCore或XyItems类。

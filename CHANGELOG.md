@@ -1,5 +1,13 @@
 # XyForgeCrafting 更新说明
 
+## 1.0.6 - 2026-08-01
+
+- 图纸身份从HMAC签名校验简化为固定隐藏NBT身份校验。
+- 新图纸只写入 `xyforge-blueprint-id` 与 `xyforge-blueprint-schema`，不再写入 `xyforge-blueprint-signature`。
+- 插件启动不再生成或读取 `plugins/XyForgeCrafting/blueprint-secret.key`，避免密钥丢失导致旧图纸失效。
+- 旧版已发放图纸如果残留签名字段，新版本会直接忽略；只要隐藏配方ID与schema正确且配方仍启用，就可以继续使用。
+- 同步更新默认配置、命令帮助、README、AI使用记录和维护手册中的签名图纸文案。
+
 ## 1.0.5 - 2026-08-01
 
 - 新增重构后的配方短格式：`blueprint.material/name`、`money`、`failure.*`、`success-commands`。
