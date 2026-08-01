@@ -10,4 +10,5 @@ public interface XyCoreApi {
     ItemLibraryService getItems();
     ItemTagService getItemTags();
     ReloadManager getReloads();
+    String getMessagePrefix();
 }

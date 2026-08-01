@@ -2,7 +2,7 @@
 
 ## 项目范围
 
-XyForgeCrafting当前版本1.0.6由AI在服主逐项确认玩法、配置和概率模型后辅助设计与实现。插件是服务器核心锻造玩法，目标环境固定为Java 8与Paper 1.12.2。
+XyForgeCrafting当前版本1.0.7由AI在服主逐项确认玩法、配置和概率模型后辅助设计与实现。插件是服务器核心锻造玩法，目标环境固定为Java 8与Paper 1.12.2。
 
 ## 服主确认的关键需求
 
@@ -15,7 +15,7 @@ XyForgeCrafting当前版本1.0.6由AI在服主逐项确认玩法、配置和概�
 - 最终失败/品质概率存放在XyItems成品，不在配方重复配置成功率。
 - 锻造失败可配置图纸销毁或退还、材料退款、金币退款和消息。
 - 锻造过程需要原版GUI动画。
-- 项目必须使用Gradle Wrapper；首个完整版本为1.0.1，当前功能版本为1.0.6，并提供完整文档。
+- 项目必须使用Gradle Wrapper；首个完整版本为1.0.1，当前功能版本为1.0.7，并提供完整文档。
 
 ## AI辅助决策
 
@@ -37,12 +37,20 @@ XyForgeCrafting当前版本1.0.6由AI在服主逐项确认玩法、配置和概�
 ## 验证记录
 
 - 已执行 `gradlew.bat clean build --no-daemon`，包含测试的最终联合构建成功。
-- 已确认构建目标和插件描述版本均为1.0.4。
+- 已确认构建目标和插件描述版本均为1.0.7。
 - 已确认默认GUI六行均为9字符，并包含唯一图纸槽和唯一开始槽。
 - 已确认默认配方使用完整材料ID和XyItems成品ID。
 - 测试确认默认GUI为54格、图纸槽和开始槽唯一、概率槽为1个，并确认默认配方可加载。
-- 另使用 `javac` 将17个主源码文件直接对照实际 `XyCore-0.3.10.jar` 与 `XyItems-1.0.2.jar` 编译，API签名验证成功。
+- 另使用 `javac` 将17个主源码文件直接对照实际 `XyCore-0.3.10.jar` 与 `XyItems-1.0.2.jar` 编译，API签名验证成功；1.0.7开始运行期要求XyCore 0.3.11与XyItems 1.0.5。
 - 已核对最终JAR未打入Paper、XyCore或XyItems编译桩。
+
+## 1.0.7 统一前缀维护记录
+
+- 根据服主确认的Xy系列聊天前缀统一规则，AI辅助将XyForgeCrafting所有玩家聊天提示统一改为读取 `XyCoreApi#getMessagePrefix()`。
+- 由于XyForgeCrafting强依赖XyCore和XyItems，启动依赖检查明确要求XyCore 0.3.11与XyItems 1.0.5，避免旧API在运行期才报错。
+- 命令类中原先直接 `sender.sendMessage` 的帮助、列表、获取图纸、重载等反馈全部收敛到 `plugin.sendRaw`，确保显示效果一致。
+- `config.yml -> messages.prefix` 仅为旧配置兼容保留；后台日志继续保留XyForgeCrafting插件名，方便定位锻造配置问题。
+- 本次改动不改变GUI事务、材料扣除、图纸NBT身份、概率抽取和动画路径。
 
 ## 1.0.2命令更新记录
 

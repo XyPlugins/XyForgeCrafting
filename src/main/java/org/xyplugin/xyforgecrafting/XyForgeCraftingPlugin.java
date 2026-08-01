@@ -106,13 +106,14 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
         try {
             Object coreItems = XyCore.get().getItems();
             coreItems.getClass().getMethod("matches", String.class, ItemStack.class);
+            XyCore.get().getClass().getMethod("getMessagePrefix");
             Object itemApi = XyItems.get();
             itemApi.getClass().getMethod("getForgeOutcomeProfile", String.class);
             itemApi.getClass().getMethod("rollForgeOutcome", String.class);
             itemApi.getClass().getMethod("deliverItems", Player.class, java.util.List.class);
             return true;
         } catch (Throwable failure) {
-            getLogger().severe("依赖API版本不兼容。需要XyCore 0.3.10和XyItems 1.0.4: " + failure.getMessage());
+            getLogger().severe("依赖API版本不兼容。需要XyCore 0.3.11和XyItems 1.0.5: " + failure.getMessage());
             return false;
         }
     }
@@ -146,7 +147,7 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
 
     public void sendRaw(CommandSender sender, String message) {
         if (sender == null || message == null || message.isEmpty()) return;
-        String prefix = settings == null ? "" : settings.message("prefix");
+        String prefix = XyCore.get().getMessagePrefix();
         sender.sendMessage(Text.color(prefix + message));
     }
 

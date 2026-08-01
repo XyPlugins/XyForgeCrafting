@@ -1,5 +1,13 @@
 # XyForgeCrafting 更新说明
 
+## 1.0.7 - 2026-08-02
+
+- 玩家聊天提示前缀改为统一读取 `XyCoreApi#getMessagePrefix()`，即 XyCore `config.yml -> messages.prefix`。
+- `/xyfc get/give/list/help/reload/open` 等命令反馈统一改走插件发送入口，避免个别命令仍显示本插件旧前缀。
+- 启动依赖检查提升为 XyCore 0.3.11 与 XyItems 1.0.5，确保前缀API和锻造结果API同时可用。
+- `config.yml -> messages.prefix` 仅作为旧配置兼容保留；控制台日志继续保留 `[XyForgeCrafting]`。
+- 同步更新README、AI使用记录、维护手册、默认配置注释和版本号。
+
 ## 1.0.6 - 2026-08-01
 
 - 图纸身份从HMAC签名校验简化为固定隐藏NBT身份校验。

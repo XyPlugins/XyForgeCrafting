@@ -15,7 +15,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.xyplugin.xyforgecrafting.XyForgeCraftingPlugin;
 import org.xyplugin.xyforgecrafting.recipe.RecipeDefinition;
-import org.xyplugin.xyforgecrafting.util.Text;
 
 public final class XyForgeCommand implements CommandExecutor, TabCompleter {
     private static final int MAX_BLUEPRINT_AMOUNT = 64;
@@ -56,12 +55,12 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 3) {
-            sender.sendMessage(Text.color("&c用法: /xyfc give <玩家> <配方ID> [数量]"));
+            plugin.sendRaw(sender, "&c用法: /xyfc give <玩家> <配方ID> [数量]");
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[1]);
         if (target == null) {
-            sender.sendMessage(Text.color("&c玩家不在线: " + args[1]));
+            plugin.sendRaw(sender, "&c玩家不在线: " + args[1]);
             return true;
         }
         return deliverBlueprint(sender, target, args[2], args.length >= 4 ? args[3] : null, true);
@@ -77,7 +76,7 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 2) {
-            sender.sendMessage(Text.color("&c用法: /xyfc get <配方ID> [数量]"));
+            plugin.sendRaw(sender, "&c用法: /xyfc get <配方ID> [数量]");
             return true;
         }
         return deliverBlueprint(sender, (Player) sender, args[1], args.length >= 3 ? args[2] : null, false);
@@ -87,7 +86,7 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
                                      String amountText, boolean administrativeGive) {
         Optional<RecipeDefinition> recipe = plugin.getRecipeRegistry().find(recipeId);
         if (!recipe.isPresent()) {
-            sender.sendMessage(Text.color("&c不存在或未启用的配方: " + recipeId));
+            plugin.sendRaw(sender, "&c不存在或未启用的配方: " + recipeId);
             return true;
         }
         int amount = 1;
@@ -99,12 +98,12 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             }
         }
         if (amount <= 0 || amount > MAX_BLUEPRINT_AMOUNT) {
-            sender.sendMessage(Text.color("&c数量必须是1到64的整数。"));
+            plugin.sendRaw(sender, "&c数量必须是1到64的整数。");
             return true;
         }
         Optional<ItemStack> blueprint = plugin.getBlueprints().create(recipe.get(), 1);
         if (!blueprint.isPresent()) {
-            sender.sendMessage(Text.color("&c图纸基础物品无法生成，请检查blueprint.material。"));
+            plugin.sendRaw(sender, "&c图纸基础物品无法生成，请检查blueprint.material。");
             return true;
         }
         int remaining = amount;
@@ -116,12 +115,12 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             remaining -= stack.getAmount();
         }
         if (administrativeGive) {
-            sender.sendMessage(Text.color("&a已给予 " + target.getName() + " " + amount + " 张 "
-                    + recipe.get().getBlueprint().getDisplayName() + "&a。"));
+            plugin.sendRaw(sender, "&a已给予 " + target.getName() + " " + amount + " 张 "
+                    + recipe.get().getBlueprint().getDisplayName() + "&a。");
         }
         if (!administrativeGive || sender != target) {
-            target.sendMessage(Text.color("&a获得了 " + amount + " 张 "
-                    + recipe.get().getBlueprint().getDisplayName() + "&a。"));
+            plugin.sendRaw(target, "&a获得了 " + amount + " 张 "
+                    + recipe.get().getBlueprint().getDisplayName() + "&a。");
         }
         return true;
     }
@@ -131,8 +130,8 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
             plugin.send(sender, "no-permission");
             return true;
         }
-        sender.sendMessage(Text.color("&6已加载锻造配方 (&f" + plugin.getRecipeRegistry().size() + "&6): &f"
-                + String.join(", ", plugin.getRecipeRegistry().getIds())));
+        plugin.sendRaw(sender, "&6已加载锻造配方 (&f" + plugin.getRecipeRegistry().size() + "&6): &f"
+                + String.join(", ", plugin.getRecipeRegistry().getIds()));
         return true;
     }
 
@@ -146,19 +145,19 @@ public final class XyForgeCommand implements CommandExecutor, TabCompleter {
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage(Text.color("&6=== XyForgeCrafting " + plugin.getDescription().getVersion() + " ==="));
-        sender.sendMessage(Text.color("&e/xyfc open &7- 打开锻造台"));
+        plugin.sendRaw(sender, "&6=== XyForgeCrafting " + plugin.getDescription().getVersion() + " ===");
+        plugin.sendRaw(sender, "&e/xyfc open &7- 打开锻造台");
         if (sender instanceof Player && sender.hasPermission("xyforgecrafting.get")) {
-            sender.sendMessage(Text.color("&e/xyfc get <配方ID> [数量] &7- 获得锻造图纸"));
+            plugin.sendRaw(sender, "&e/xyfc get <配方ID> [数量] &7- 获得锻造图纸");
         }
         if (sender.hasPermission("xyforgecrafting.list")) {
-            sender.sendMessage(Text.color("&e/xyfc list &7- 查看配方"));
+            plugin.sendRaw(sender, "&e/xyfc list &7- 查看配方");
         }
         if (sender.hasPermission("xyforgecrafting.give")) {
-            sender.sendMessage(Text.color("&e/xyfc give <玩家> <配方ID> [数量] &7- 给予锻造图纸"));
+            plugin.sendRaw(sender, "&e/xyfc give <玩家> <配方ID> [数量] &7- 给予锻造图纸");
         }
         if (sender.hasPermission("xyforgecrafting.reload")) {
-            sender.sendMessage(Text.color("&e/xyfc reload &7- 安全重载"));
+            plugin.sendRaw(sender, "&e/xyfc reload &7- 安全重载");
         }
     }
 

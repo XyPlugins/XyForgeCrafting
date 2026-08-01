@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.6
+# XyForgeCrafting 1.0.7
 # 仅支持 Paper/Spigot 1.12.2 与 Java 8，不使用 DragonCore GUI。
 # type 对应功能完整说明
 # BACKGROUND：锁定的背景装饰槽，同时作为火焰动画的移动路径。
@@ -114,6 +114,7 @@ forge-record:
     - '&7----------------------------------'
 
 messages:
+  # 兼容旧配置保留；玩家聊天提示实际优先使用 XyCore config.yml -> messages.prefix。
   prefix: '&7[&6XyForgeCrafting&7]&r '
   no-permission: '&c你没有权限执行这个操作。'
   player-only: '&c该命令只能由玩家执行。'
