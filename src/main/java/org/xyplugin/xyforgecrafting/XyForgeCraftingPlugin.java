@@ -5,6 +5,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.xyplugin.xycore.api.XyCore;
 import org.xyplugin.xycore.api.service.Reloadable;
@@ -36,6 +37,8 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
     public void onEnable() {
         saveDefaultConfig();
         ensureRecipeExample();
+        getLogger().info("检测依赖: XyCore " + dependencyVersion("XyCore")
+                + ", XyItems " + dependencyVersion("XyItems") + "。");
         if (!verifyDependencyApis()) {
             Bukkit.getPluginManager().disablePlugin(this);
             return;
@@ -94,7 +97,7 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
             recipes = candidateRecipes.getRegistry();
             return true;
         } catch (Exception failure) {
-            getLogger().warning("[XyForgeCrafting] 配置加载失败: " + failure.getMessage());
+            getLogger().warning("[XyForgeCrafting] 配置加载失败: " + describeFailure(failure));
             return false;
         }
     }
@@ -115,7 +118,8 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
             itemApi.getClass().getMethod("deliverItems", Player.class, java.util.List.class);
             return true;
         } catch (Throwable failure) {
-            getLogger().severe("依赖API版本不兼容。建议使用XyCore 0.3.12和XyItems 1.0.6: " + failure.getMessage());
+            getLogger().severe("依赖API版本不兼容。当前依赖: XyCore " + dependencyVersion("XyCore")
+                    + ", XyItems " + dependencyVersion("XyItems") + "。原因: " + describeFailure(failure));
             return false;
         }
     }
@@ -134,13 +138,31 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
                     return false;
                 }
             }
-            if (!XyItems.get().getForgeOutcomeProfile(recipe.getResult().getXyItemsId()).isPresent()) {
-                getLogger().warning("配方 " + recipeId + " 的XyItems成品不存在或没有forge.failure/品质: "
+            String resultId = recipe.getResult().getXyItemsId();
+            if (!XyItems.get().getForgeOutcomeProfile(resultId).isPresent()) {
+                getLogger().warning("配方 " + recipeId + " 的XyItems成品不存在，或没有可用于锻造抽取的配置: "
                         + recipe.getResult().getItem());
+                getLogger().warning("请检查 XyItems/items/**/*.yml 中的 items." + resultId
+                        + "，并确认同时存在 forge.failure.weight（允许填写0）和"
+                        + " identify.enabled: true / identify.qualities。");
                 return false;
             }
         }
         return true;
+    }
+
+    private String dependencyVersion(String pluginName) {
+        Plugin plugin = Bukkit.getPluginManager().getPlugin(pluginName);
+        return plugin == null ? "未安装" : plugin.getDescription().getVersion();
+    }
+
+    private String describeFailure(Throwable failure) {
+        if (failure == null) return "未知异常";
+        String message = failure.getMessage();
+        if (message != null && !message.trim().isEmpty()) {
+            return failure.getClass().getSimpleName() + ": " + message;
+        }
+        return failure.getClass().getSimpleName();
     }
 
     public void send(CommandSender sender, String messageKey) {
