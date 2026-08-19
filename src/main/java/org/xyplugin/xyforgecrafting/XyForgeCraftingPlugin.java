@@ -1,6 +1,8 @@
 package org.xyplugin.xyforgecrafting;
 
 import java.io.File;
+import java.lang.reflect.Method;
+import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -8,8 +10,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.xyplugin.xycore.api.XyCore;
+import org.xyplugin.xycore.api.item.ItemLibraryService;
+import org.xyplugin.xycore.api.item.ItemProvider;
 import org.xyplugin.xycore.api.service.Reloadable;
 import org.xyplugin.xyforgecrafting.blueprint.BlueprintService;
+import org.xyplugin.xyforgecrafting.blueprint.ForgeBlueprintProvider;
 import org.xyplugin.xyforgecrafting.command.XyForgeCommand;
 import org.xyplugin.xyforgecrafting.config.ForgeSettings;
 import org.xyplugin.xyforgecrafting.gui.ForgeGuiManager;
@@ -20,6 +25,7 @@ import org.xyplugin.xyforgecrafting.service.ForgeService;
 import org.xyplugin.xyforgecrafting.service.PendingDeliveryStore;
 import org.xyplugin.xyforgecrafting.util.Text;
 import org.xyplugin.xyitems.api.XyItems;
+import org.xyplugin.xyitems.api.XyItemsApi;
 
 /** XyForgeCrafting, intentionally targeting only Paper/Spigot 1.12.2. */
 public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadable {
@@ -28,6 +34,7 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
     private ForgeSettings settings;
     private RecipeRegistry recipes = RecipeRegistry.empty();
     private BlueprintService blueprints;
+    private ForgeBlueprintProvider blueprintProvider;
     private SoulSpaceBridge soulSpace;
     private PendingDeliveryStore pending;
     private ForgeService forge;
@@ -50,6 +57,8 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
         }
         try {
             blueprints = new BlueprintService(this);
+            blueprintProvider = new ForgeBlueprintProvider(this, blueprints);
+            XyCore.get().getItems().registerProvider(blueprintProvider);
         } catch (Exception failure) {
             getLogger().severe("图纸身份服务启动失败: " + failure.getMessage());
             Bukkit.getPluginManager().disablePlugin(this);
@@ -72,6 +81,13 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
 
     @Override
     public void onDisable() {
+        if (blueprintProvider != null) {
+            try {
+                XyCore.get().getItems().unregisterProvider(blueprintProvider.getId());
+            } catch (LinkageError | RuntimeException ignored) {
+            }
+            blueprintProvider = null;
+        }
         try {
             XyCore.get().getReloads().unregister(getId());
         } catch (RuntimeException ignored) {
@@ -80,6 +96,7 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
     }
 
     public boolean reloadAll() {
+        if (!reloadLinkedXyItems()) return false;
         if (!loadSnapshots(true)) return false;
         if (gui != null) gui.closeAll();
         if (soulSpace != null) soulSpace.refresh();
@@ -109,17 +126,19 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
 
     private boolean verifyDependencyApis() {
         try {
-            Object coreItems = XyCore.get().getItems();
+            ItemLibraryService coreItems = XyCore.get().getItems();
             coreItems.getClass().getMethod("matches", String.class, ItemStack.class);
+            coreItems.getClass().getMethod("registerProvider", ItemProvider.class);
+            coreItems.getClass().getMethod("unregisterProvider", String.class);
             XyCore.get().getClass().getMethod("getMessagePrefix");
-            Object itemApi = XyItems.get();
+            XyItemsApi itemApi = XyItems.get();
             itemApi.getClass().getMethod("getForgeOutcomeProfile", String.class);
             itemApi.getClass().getMethod("rollForgeOutcome", String.class);
             itemApi.getClass().getMethod("deliverItems", Player.class, java.util.List.class);
             return true;
         } catch (Throwable failure) {
-            getLogger().severe("依赖API版本不兼容。当前依赖: XyCore " + dependencyVersion("XyCore")
-                    + ", XyItems " + dependencyVersion("XyItems") + "。原因: " + describeFailure(failure));
+            getLogger().severe("依赖API版本不兼容。建议使用XyCore 0.3.12和XyItems 1.0.7: "
+                    + describeFailure(failure));
             return false;
         }
     }
@@ -149,6 +168,26 @@ public final class XyForgeCraftingPlugin extends JavaPlugin implements Reloadabl
             }
         }
         return true;
+    }
+
+    private boolean reloadLinkedXyItems() {
+        Plugin xyItems = Bukkit.getPluginManager().getPlugin("XyItems");
+        if (xyItems == null || !xyItems.isEnabled()) {
+            getLogger().warning("XyItems未启用，无法同步重载锻造配置。");
+            return false;
+        }
+        try {
+            Method reload = xyItems.getClass().getMethod("reloadItemDefinitions");
+            Object result = reload.invoke(xyItems);
+            if (result instanceof Boolean && !((Boolean) result)) {
+                getLogger().warning("XyItems重载失败，已保留当前锻造配置。");
+                return false;
+            }
+            return true;
+        } catch (Throwable failure) {
+            getLogger().warning("XyItems同步重载失败: " + failure.getMessage());
+            return false;
+        }
     }
 
     private String dependencyVersion(String pluginName) {

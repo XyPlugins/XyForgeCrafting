@@ -29,7 +29,9 @@ public final class BlueprintService {
 
     public Optional<ItemStack> create(RecipeDefinition recipe, int amount) {
         if (recipe == null || amount <= 0 || amount > 64) return Optional.empty();
-        Optional<ItemStack> base = items.create(recipe.getBlueprint().getTemplate(), amount);
+        String template = recipe.getBlueprint().getTemplate();
+        if (isForgeBlueprintId(template)) return Optional.empty();
+        Optional<ItemStack> base = items.create(template, amount);
         if (!base.isPresent()) return Optional.empty();
         ItemStack blueprint = base.get();
         ItemMeta meta = blueprint.getItemMeta();
@@ -45,14 +47,25 @@ public final class BlueprintService {
     }
 
     public Optional<RecipeDefinition> identify(ItemStack item) {
+        Optional<String> id = readBlueprintId(item);
+        return id.isPresent() ? plugin.getRecipeRegistry().find(id.get()) : Optional.empty();
+    }
+
+    public Optional<String> readBlueprintId(ItemStack item) {
         if (item == null || item.getAmount() <= 0) return Optional.empty();
         String id = tags.getString(item, ID_TAG).orElse("");
         String schema = tags.getString(item, SCHEMA_TAG).orElse("");
-        if (id.isEmpty() || !SCHEMA.equals(schema)) return Optional.empty();
-        return plugin.getRecipeRegistry().find(id);
+        if (id.trim().isEmpty() || !SCHEMA.equals(schema)) return Optional.empty();
+        return Optional.of(id);
     }
 
     public boolean hasBlueprintIdentity(ItemStack item) {
         return item != null && tags.getString(item, ID_TAG).isPresent();
+    }
+
+    private boolean isForgeBlueprintId(String itemId) {
+        if (itemId == null) return false;
+        int separator = itemId.indexOf(':');
+        return separator > 0 && "xyforgecrafting".equalsIgnoreCase(itemId.substring(0, separator).trim());
     }
 }

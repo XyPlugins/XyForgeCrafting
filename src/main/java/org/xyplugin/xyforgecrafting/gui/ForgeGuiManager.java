@@ -387,6 +387,7 @@ public final class ForgeGuiManager implements Listener {
             }
             ItemStack display = XyCore.get().getItems().create(requirement.getKey(), 1)
                     .orElse(new ItemStack(Material.BARRIER));
+            display.setAmount(requirementDisplayAmount(requirement.getValue()));
             long inventory = forge.inventoryCount(player, requirement.getKey());
             long soul = forge.soulCount(player, requirement.getKey());
             long total = inventory + soul;
@@ -514,6 +515,11 @@ public final class ForgeGuiManager implements Listener {
         for (String line : lines) lore.add(Text.color(line));
         meta.setLore(lore);
         item.setItemMeta(meta);
+    }
+
+    static int requirementDisplayAmount(long requiredAmount) {
+        if (requiredAmount <= 1L) return 1;
+        return (int) Math.min(64L, requiredAmount);
     }
 
     private void sanitizeProbabilityPlaceholder(ItemStack item) {

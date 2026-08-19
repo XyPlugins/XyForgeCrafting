@@ -56,6 +56,9 @@ public final class RecipeRegistry {
         ConfigurationSection blueprint = requiredSection(section, "blueprint");
         String template = itemId(blueprint.getString("material", blueprint.getString("template", "")),
                 "blueprint.material", "minecraft");
+        if (isForgeBlueprintId(template)) {
+            throw new IllegalArgumentException("blueprint.material不能引用xyforgecrafting图纸，避免递归生成。");
+        }
         String displayName = blueprint.getString("name", blueprint.getString("display-name", "&f" + id + "锻造图"));
         List<String> blueprintLore = new ArrayList<String>(blueprint.getStringList("lore"));
 
@@ -80,6 +83,9 @@ public final class RecipeRegistry {
         if (requirementSection != null) {
             for (String key : requirementSection.getKeys(false)) {
                 String fullId = itemId(key, "requirements物品ID", "minecraft");
+                if (isForgeBlueprintId(fullId)) {
+                    throw new IllegalArgumentException("requirements不能使用xyforgecrafting图纸作为材料。");
+                }
                 long amount = requirementSection.getLong(key, 0L);
                 if (amount <= 0L) throw new IllegalArgumentException("材料 " + key + " 的数量必须大于0。");
                 requirements.put(fullId, amount);
@@ -149,6 +155,12 @@ public final class RecipeRegistry {
 
     private static String normalize(String id) {
         return id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static boolean isForgeBlueprintId(String itemId) {
+        if (itemId == null) return false;
+        int separator = itemId.indexOf(':');
+        return separator > 0 && "xyforgecrafting".equalsIgnoreCase(itemId.substring(0, separator).trim());
     }
 
     private static void collect(File directory, List<File> files) {

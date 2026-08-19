@@ -1,9 +1,10 @@
-# XyForgeCrafting 1.0.8
+# XyForgeCrafting 1.0.12
 # 仅支持 Paper/Spigot 1.12.2 与 Java 8，不使用 DragonCore GUI。
 # type 对应功能完整说明
 # BACKGROUND：锁定的背景装饰槽，同时作为火焰动画的移动路径。
 # FORGE_REQUIREMENTS：锻造材料展示槽。
 # 放入有效图纸后，按照GUI布局从上到下、从左到右显示所需材料、需要数量和玩家拥有数量。
+# 材料图标右下角显示需求数量；超过64时角标显示64，完整需求数量仍在Lore中显示。
 # FORGE_BLUEPRINT：锻造图纸槽。
 # 只能放入带有XyForgeCrafting固定隐藏NBT身份的有效图纸，整个GUI必须且只能配置一个。
 # FORGE_START：开始锻造按钮。

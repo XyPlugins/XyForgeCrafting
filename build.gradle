@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'org.xyplugin'
-version = '1.0.8'
+version = '1.0.12'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8

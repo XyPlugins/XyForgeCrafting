@@ -1,4 +1,4 @@
-# XyForgeCrafting 1.0.8
+# XyForgeCrafting 1.0.12
 
 XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持Java 8与Paper/Spigot 1.12.2**。
 
@@ -11,14 +11,14 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 - Paper 1.12.2 build 1620
 - Java 8
 - XyCore 0.3.12
-- XyItems 1.0.6
+- XyItems 1.0.7
 - XySoulSpace 1.1.3，可选
 - Vault和一个经济插件；配方金币为0时可以不使用经济
 - MythicMobs 4.11，可选；仅在配方引用 `mythicmobs:` 材料时需要
 
 安装顺序：
 
-1. 将 `XyCore-0.3.12.jar`、`XyItems-1.0.6.jar` 和 `XyForgeCrafting-1.0.8.jar` 放入 `plugins/`。
+1. 将 `XyCore-0.3.12.jar`、`XyItems-1.0.7.jar` 和 `XyForgeCrafting-1.0.12.jar` 放入 `plugins/`。
 2. 需要读取灵魂仓库时同时安装 `XySoulSpace-1.1.3.jar`。
 3. 完整重启服务器，不使用Bukkit `/reload`。
 4. 插件生成 `plugins/XyForgeCrafting/config.yml` 和 `ForgeRecipe/Example.yml`。
@@ -28,7 +28,7 @@ XyForgeCrafting 是XyPlugins RPG服务器的事务型锻造插件，**只支持J
 
 1. 玩家输入 `/xyfc open` 打开锻造台。
 2. 唯一的图纸槽只接受XyForgeCrafting生成并写入固定隐藏NBT身份的图纸。
-3. 放入有效图纸后，GUI显示材料拥有量、金币、全部非零最终概率和成品预览。
+3. 放入有效图纸后，GUI显示材料拥有量、金币、全部非零最终概率和成品预览；材料图标右下角显示需求数量，超过64时角标显示64，完整需求仍在Lore中显示。
 4. 材料默认统计 `灵魂仓库 + 主背包36格`，默认优先扣灵魂仓库，再扣背包。
 5. 点击开始后播放原版GUI绿色轨迹动画，结束时重新验证并执行事务。
 6. 成功时XyItems一次决定品质并立即生成随机属性；失败时按图纸配置处理图纸、材料和金币退款。
@@ -313,7 +313,7 @@ XyForgeCrafting也注册到XyCore重载管理器，可由 `/xycore reload` 调�
 输出：
 
 ```text
-build/libs/XyForgeCrafting-1.0.8.jar
+build/libs/XyForgeCrafting-1.0.12.jar
 ```
 
 编译目标固定为Java 8，仓库内附Paper 1.12.2编译期API。最终JAR不会打入Paper、XyCore或XyItems类。
